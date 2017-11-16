@@ -7,7 +7,12 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/core.async "0.3.443"]
-                 [org.omcljs/om "1.0.0-beta1"]
+                 [org.clojure/tools.logging "0.4.0"]
+                 [org.omcljs/om "1.0.0-beta1" :exclusions [cljsjs/react cljsjs/react-dom]]
+                 [cljs-react-material-ui "0.2.48"]
+                 [cljsjs/react "15.6.1-1"]
+                 [cljsjs/react-dom "15.6.1-1"]
+
                  [om-sync "0.1.1"]
                  [ring "1.6.3"]
 

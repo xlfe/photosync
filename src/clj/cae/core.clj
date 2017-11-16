@@ -1,8 +1,9 @@
 (ns cae.core
-  (:use [liberator.core :only [resource defresource]])
   (:require [compojure.core :refer [defroutes ANY GET]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.reload :refer [wrap-reload]]
+            [clojure.tools.logging :as log]
+            [liberator.core :refer [resource defresource]]
             [clojure.edn :as edn]
             [compojure.route :as route])
   (:import [com.google.appengine.api.datastore DatastoreServiceFactory, Query, KeyRange, Entity]
@@ -42,7 +43,7 @@
 
 
 (defn get-classes [db]
-  (vec []))
+  (vec [{:id "test" :title "test" :eid "eid"}]))
 
 (defn generate-response [data & [status]]
   {:status (or status 200)
@@ -52,7 +53,7 @@
 
 (defn init []
   (generate-response
-    {:classes {:url "/classes" :coll (get-classes '())}}))
+    {:classes {:url "/classes" :coll (read-db)}}))
 ;(d/db conn))}}))
 
 (defn update-class [params]
@@ -86,6 +87,15 @@
                  :edn-body (read-inputstream-edn body))
                request))))
 
+(defn
+  wrap-dir-index [handler]
+  (fn [req]
+    (do
+      (log/info req)
+      (handler (update-in req [:uri] #(if (= "/" %) "/index.html" %)))
+      ))
+  )
+
 
 
 
@@ -93,12 +103,6 @@
 (defn tiger-not-found
   [ctx]
   (format "That is not THE right word: '%s'. Try again?" (get-in ctx [:request :params "word"])))
-
-(defn wrap-dir-index [handler]
-  (fn [req]
-    (handler
-      (update-in req [:uri]
-                 #(if (= "/" %) "/index.html" %)))))
 
 ;(defroutes routes
            ;(GET "/" [] (index))
@@ -109,14 +113,12 @@
 
 
 (defroutes app
-           (route/resources "/")
            (GET "/init" [] (init))
-           (ANY "/details" [] (resource)
-                         :available-media-types ["text/html"]
-                                 :handle-ok (fn [_]
-                                              (str "<h1>Hello World</h1><h2>db contains:</h2><p>" (read-db) "</p>")))
-
-
+           (ANY "/details" [] (resource
+                                :available-media-types ["text/html"]
+                                :handle-ok
+                                           (fn [_]
+                                              (str "<h1>Hello World</h1><h2>db contains:</h2><p>" (read-db) "</p>"))))
 
            (GET "/new/:name" [name] (write-db name))
            (GET "/txn" [] (txn))
@@ -125,17 +127,16 @@
                                   (= "tiger" (get-in ctx [:request :params "word"])))
                        :handle-ok "You found the secret word!"
                        :handle-not-found tiger-not-found)
+
+           (route/resources "/")
            (route/not-found "<h1>Page not found.</h1>"))
 
 (def prod-handler
   (-> app
+      wrap-params
       wrap-dir-index
-      wrap-params))
+      parse-edn-body))
 
 (def reload-handler
   (-> prod-handler
-      parse-edn-body
-      ;app
       wrap-reload))
-      ;wrap-dir-index
-      ;wrap-params))
