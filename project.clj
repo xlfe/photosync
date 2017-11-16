@@ -1,22 +1,24 @@
+(def appengine-version "1.9.58")
+
 (defproject om-async "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :jvm-opts ^:replace ["-Xmx1g" "-server"]
 
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-3195"]
-                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [org.omcljs/om "0.8.8"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojurescript "1.9.946"]
+                 [org.clojure/core.async "0.3.443"]
+                 [org.omcljs/om "1.0.0-beta1"]
                  [om-sync "0.1.1"]
-                 [ring "1.3.2"]
-                 [compojure "1.3.1"]
-                 [com.datomic/datomic-free "0.9.5130" :exclusions [joda-time]]]
+                 [ring "1.6.3"]
 
-  :plugins [[lein-cljsbuild "1.0.5"]
-            [lein-figwheel "0.2.9"]]
+                 [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
+                 [liberator "0.15.1"]
+                 [compojure "1.6.0"]]
+
+
+  :plugins [[lein-cljsbuild "1.1.7"]
+            [lein-ring "0.12.1" :exclusions [org.clojure/clojure]]
+            [lein-figwheel "0.5.14"]]
 
 
   :source-paths ["src/clj" "src/cljs"]
@@ -24,9 +26,29 @@
   :clean-targets ^{:protect false} ["resources/public/js/out"
                                     "resources/public/js/main.js"]
 
-  :figwheel {:ring-handler om-async.core/handler}
+  :figwheel {}
+             ;:ring-handler om-async.core/handler}
 
-  :cljsbuild {:builds [{:id "dev"
+  :ring {
+         :handler cae.core/prod-handler}
+
+  :profiles {
+             :dev
+             {
+              :repl-options {
+                             :init-ns cae.appengine
+                             :init (start-it)}
+
+              :source-paths ["dev/"]
+              :dependencies
+                            [[com.google.appengine/appengine-api-stubs ~appengine-version]
+                             [com.google.appengine/appengine-local-runtime ~appengine-version]
+                             [com.google.appengine/appengine-local-runtime-shared ~appengine-version]]}}
+
+  :cljsbuild {
+              :builds [
+                       {
+                        :id "dev"
                         :source-paths ["src/clj" "src/cljs"]
                         :figwheel true
                         :compiler {:output-to "resources/public/js/main.js"

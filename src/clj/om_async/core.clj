@@ -4,14 +4,11 @@
             [compojure.core :refer [defroutes GET PUT POST]]
             [compojure.route :as route]
             [compojure.handler :as handler]
-            [datomic.api :as d]
             [clojure.edn :as edn]))
 
-(def uri "datomic:free://localhost:4334/om_async")
-(def conn (d/connect uri))
 
-(defn index []
-  (file-response "public/html/index.html" {:root "resources"}))
+;(defn index []
+;  (file-response "public/html/index.html" {:root "resources"}))
 
 (defn generate-response [data & [status]]
   {:status (or status 200)
@@ -22,32 +19,37 @@
   {:status 500})
 
 (defn get-classes [db]
-  (->> (d/q '[:find ?class
-              :where
-              [?class :class/id]]
-          db)
-       (map #(d/touch (d/entity db (first %))))
-       vec))
+  (vec []))
+  ;(->> (d/q '[:find ?class
+  ;            :where
+  ;            [?class :class/id]
+  ;        db
+  ;     (map #(d/touch (d/entity db (first %))))
+  ;     vec)
 
 (defn init []
   (generate-response
-     {:classes {:url "/classes" :coll (get-classes (d/db conn))}}))
+     {:classes {:url "/classes" :coll (get-classes '())}}))
+                                                   ;(d/db conn))}}))
+
 
 (defn update-class [params]
-  (let [db    (d/db conn)
+  (let [db    nil ;(d/db conn)
         id    (:class/id params)
         title (:class/title params)
         eid   (ffirst
-                (d/q '[:find ?class
-                       :in $ ?id
-                       :where
-                       [?class :class/id ?id]]
-                  db id))]
-    (d/transact conn [[:db/add eid :class/title title]])
+                nil)]
+                ;(d/q '[:find ?class
+                ;       :in $ ?id
+                ;       :where
+                ;       [?class :class/id ?id]
+                ;  db id)]
+    ;(d/transact conn [[:db/add eid :class/title title]])
     (generate-response {:status :ok})))
 
 (defn classes []
-  (generate-response (get-classes (d/db conn))))
+  nil)
+  ;(generate-response (get-classes (d/db conn))))
 
 (defroutes routes
   (GET "/" [] (index))

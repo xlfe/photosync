@@ -64,7 +64,7 @@
     om/IRender
     (render [_]
       (dom/div #js {:id "classes"}
-        (dom/h2 nil "Classes")
+        (dom/h2 nil "New Classes")
         (apply dom/ul nil
           (map #(om/build editable % {:opts {:edit-key :class/title}})
             classes))
@@ -96,8 +96,8 @@
                     (reset! app-state (:old-state tx-data))
                     (om/set-state! owner :err-msg
                       "Oops! Sorry, something went wrong. Try again later."))}})
-         (when err-msg
-           (dom/div nil err-msg))))))
+        (when err-msg
+          (dom/div nil err-msg))))))
 
 (let [tx-chan (chan)
       tx-pub-chan (async/pub tx-chan (fn [_] :txs))]
