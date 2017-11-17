@@ -39,7 +39,7 @@
              {
               :repl-options {
                              :init-ns cae.appengine
-                             :init (start-it)}
+                             :init    (start-it)}
 
               :source-paths ["dev/"]
               :dependencies
@@ -58,7 +58,7 @@
                                        :main          om-async.core
                                        :asset-path    "js/out"
                                        :optimizations :none
-                                       :source-map true
+                                       :source-map    true
                                        }
                         }
                        {

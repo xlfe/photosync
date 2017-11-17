@@ -2,6 +2,7 @@
   (:require [compojure.core :refer [defroutes ANY GET]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.reload :refer [wrap-reload]]
+            [ring.util.response :refer [resource-response]]
             [clojure.tools.logging :as log]
             [liberator.core :refer [resource defresource]]
             [clojure.edn :as edn]
@@ -128,13 +129,13 @@
                        :handle-ok "You found the secret word!"
                        :handle-not-found tiger-not-found)
 
+           (GET  "/app/" [] (resource-response "index.html" {:root "public/html"}))
            (route/resources "/app/")
-           (route/not-found "<h1>Page not found.</h1>"))
+           (route/not-found (resource-response "404.html" {:root "public/html"})))
 
 (def prod-handler
   (-> app
       wrap-params
-      wrap-dir-index
       parse-edn-body))
 
 (def reload-handler
