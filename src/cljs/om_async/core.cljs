@@ -77,7 +77,7 @@
                         :font-weight        200}})}
 
         (dom/div #js {:id "classes"}
-                 (ui/app-bar {:title "testing"})
+                 (ui/app-bar {:title "New App"})
                  (dom/h2 nil "New Classes")
                  (apply dom/ul nil
                         (map #(om/build editable % {:opts {:edit-key :class/title}})

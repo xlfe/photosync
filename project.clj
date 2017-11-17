@@ -31,9 +31,6 @@
   :clean-targets ^{:protect false} ["resources/public/js/out"
                                     "resources/public/js/main.js"]
 
-  :figwheel {}
-             ;:ring-handler om-async.core/handler}
-
   :ring {
          :handler cae.core/prod-handler}
 
@@ -53,12 +50,27 @@
   :cljsbuild {
               :builds [
                        {
-                        :id "dev"
-                        :source-paths ["src/clj" "src/cljs"]
-                        :figwheel true
-                        :compiler {:output-to "resources/public/js/main.js"
-                                   :output-dir "resources/public/js/out"
-                                   :main om-async.core
-                                   :asset-path "js/out"
-                                   :optimizations :none
-                                   :source-map true}}]})
+                        :id           "dev"
+                        :source-paths ["src/cljs" "src/clj"]
+                        :figwheel     true
+                        :compiler     {:output-to     "resources/public/js/main.js"
+                                       :output-dir    "resources/public/js/out"
+                                       :main          om-async.core
+                                       :asset-path    "js/out"
+                                       :optimizations :none
+                                       :source-map true
+                                       }
+                        }
+                       {
+                        :id           "production"
+                        :source-paths ["src/cljs"]
+                        :figwheel     false
+                        :compiler     {:output-to     "resources/public/js/main.js"
+                                       :output-dir    "resources/public/js/"
+                                       :asset-path    "js"
+                                       :optimizations :advanced
+                                       }
+                        }
+                       ]
+              }
+  )

@@ -1,7 +1,8 @@
 #!bash
 
 rm target/*-standalone.war
-lein cljsbuild once
+lein clean
+lein cljsbuild once production
 lein ring uberwar
 if [ -d "target/war" ]; then
 	rm -rf target/war

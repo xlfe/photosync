@@ -53,7 +53,7 @@
 
 (defn init []
   (generate-response
-    {:classes {:url "/classes" :coll (read-db)}}))
+    {:classes {:url "/classes" :coll []}}))
 ;(d/db conn))}}))
 
 (defn update-class [params]
@@ -92,9 +92,9 @@
   (fn [req]
     (do
       (log/info req)
-      (handler (update-in req [:uri] #(if (= "/" %) "/index.html" %)))
-      ))
-  )
+      (handler (update-in req [:uri] #(if (= "/app/" %) "/app/index.html" %))))))
+
+
 
 
 
@@ -128,7 +128,7 @@
                        :handle-ok "You found the secret word!"
                        :handle-not-found tiger-not-found)
 
-           (route/resources "/")
+           (route/resources "/app/")
            (route/not-found "<h1>Page not found.</h1>"))
 
 (def prod-handler
