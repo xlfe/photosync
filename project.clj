@@ -12,6 +12,7 @@
                  [cljs-react-material-ui "0.2.48"]
                  [cljsjs/react "15.6.1-1"]
                  [cljsjs/react-dom "15.6.1-1"]
+                 [camel-snake-kebab "0.4.0"]
 
                  [om-sync "0.1.1"]
                  [ring "1.6.3"]
@@ -58,9 +59,9 @@
                                        :main          om-async.core
                                        :asset-path    "js/out"
                                        :optimizations :none
-                                       :source-map    true
-                                       }
-                        }
+                                       :source-map    true}}
+
+
                        {
                         :id           "production"
                         :source-paths ["src/cljs"]
@@ -68,9 +69,9 @@
                         :compiler     {:output-to     "resources/public/js/main.js"
                                        :output-dir    "resources/public/js/"
                                        :asset-path    "js"
-                                       :optimizations :advanced
-                                       }
-                        }
-                       ]
-              }
-  )
+                                       :optimizations :advanced}}]})
+
+
+
+
+

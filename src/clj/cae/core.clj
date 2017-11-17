@@ -6,40 +6,49 @@
             [clojure.tools.logging :as log]
             [liberator.core :refer [resource defresource]]
             [clojure.edn :as edn]
+            [cae.datastore :as ds]
+            [cae.model]
             [compojure.route :as route])
-  (:import [com.google.appengine.api.datastore DatastoreServiceFactory, Query, KeyRange, Entity]
-           [com.google.appengine.api.datastore FetchOptions$Builder]))
+  (:import
+    [cae.model CodeTree PrintJob]))
+
+;(:import [com.google.appengine.api.datastore DatastoreServiceFactory, Query, KeyRange, Entity]
+  ;         [com.google.appengine.api.datastore FetchOptions$Builder]))
 
 
 
-(defn read-db
+(defn get-current-job
   []
-  (let [datastore (DatastoreServiceFactory/getDatastoreService)
-        query (Query. "item")
-        prepared-query (.prepare datastore query)
-        result (.asList prepared-query (FetchOptions$Builder/withDefaults))]
-    (pr-str (map #(.getProperty %1 "name")
-                 result))))
+  (let [[job] (ds/query
+                PrintJob
+                :filter [:or [:= :status "printing"] [:= :status "complete"]]
+                :sort [[:created :desc]] ;; FIXME :started
+                :limit 1)
+        object (if job (ds/retrieve CodeTree (:object-id job)))]
+    [job object]))
 
 (defn write-db
   [name]
-  (let [datastore (DatastoreServiceFactory/getDatastoreService)
-        entity (Entity. "item")]
-    (.setProperty entity "name" name)
-    (let [key (.put datastore entity)]
-      (str key))))
+  nil)
+  ;(let [datastore (DatastoreServiceFactory/getDatastoreService)
+  ;      entity (Entity. "item")]
+  ;  (.setProperty entity "name" name)
+  ;  (let [key (.put datastore entity)]
+  ;    (str key))))
+
 
 
 (defn txn
   []
-  (let [ds (DatastoreServiceFactory/getDatastoreService)
-        keys (KeyRange. nil "ident" 1 1)
-        entity (Entity. "item")]
-
-    (.setProperty entity "id" (.getStart keys))
-
-    (let [key (.put ds entity)]
-      (str key))))
+  nil)
+  ;(let [ds (DatastoreServiceFactory/getDatastoreService)
+  ;      keys (KeyRange. nil "ident" 1 1)
+  ;      entity (Entity. "item")
+  ;
+  ;  (.setProperty entity "id" (.getStart keys))
+  ;
+  ;  (let [key (.put ds entity)]
+  ;    (str key)))
 
 
 
@@ -115,11 +124,25 @@
 
 (defroutes app
            (GET "/init" [] (init))
+           (POST "/jobs" [:as req]
+                   (new-entity-request
+                     req :new-job
+                     (fn [req {:strs [object-id]}]
+                       (let [job (model/make-print-job
+                                   {:id        (str (java.util.UUID/randomUUID))
+                                    :object-id object-id
+                                    :status    "complete" ;; FIXME "created"
+                                    :created   (time/datetime->epoch (time/utc-now))})]
+                         (prn :created-job job)
+                         (ds/save! job)
+                         (api-response
+                           req (model/public-entity job :public-job-keys) 201))))
+                   (invalid-signature-response))
            (ANY "/details" [] (resource
                                 :available-media-types ["text/html"]
                                 :handle-ok
                                            (fn [_]
-                                              (str "<h1>Hello World</h1><h2>db contains:</h2><p>" (read-db) "</p>"))))
+                                              (str "<h1>Hello World</h1><h2>db contains:</h2><p>" (get-current-job) "</p>"))))
 
            (GET "/new/:name" [name] (write-db name))
            (GET "/txn" [] (txn))
