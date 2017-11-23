@@ -13,32 +13,10 @@
 ;  (let [keys (get-in config/app [:db key-id])]
 ;    (if (= :* keys) (into {} e) (select-keys e keys))))
 
-(defentity CodeTree
-           [id title author
-            ^:clj tree
-            tree-depth
-            seed
-            author-location
-            status
-            short-uri
-            stl-uri
-            video-uri
-            preview-uri
-            lux-uri
-            created
-            parent-id
-            job-id]
-           :key :id)
-
-(defentity PrintJob
+(defentity Classes
            [id
-            object-id
-            status
-            created
-            started
-            user]
+            title
+            ^:clj history
+            done]
            :key :id)
 
-(defentity PrintLog
-           [id type date message]
-           :key :id)
