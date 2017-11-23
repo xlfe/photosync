@@ -14,6 +14,8 @@
                  [cljsjs/react-dom "15.6.1-1"]
                  [camel-snake-kebab "0.4.0"]
 
+                 [net.xlfe/datastore "0.3.4-SNAPSHOT" :main ^:skip-aot om-async.core]
+
                  [om-sync "0.1.1"]
                  [ring "1.6.3"]
 

@@ -77,7 +77,7 @@
           (.getProperties)
           (reduce
             (fn [e' [k v]]
-              (let [k (keyword k)
+              (let [k (keyword (str kind "/" k))
                     v (if (clj-props k)
                         (edn/read-string (.getValue ^Text v))
                         v)]
