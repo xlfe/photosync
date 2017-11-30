@@ -13,7 +13,7 @@
 ;  (let [keys (get-in config/app [:db key-id])]
 ;    (if (= :* keys) (into {} e) (select-keys e keys))))
 
-(defentity mclass
+(defentity Classes
            [id
             title
             ^:clj history
