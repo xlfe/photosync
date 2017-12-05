@@ -42,7 +42,8 @@
   :allowed-methods [:get :post]
   :post! (fn [ctx]
            (dosync
-             (let [data (:edn-body ctx)]
+             (let [data (get-in ctx [:request :edn-body])]
+               (println data)
                {::id 1})))
   :post-redirect? (fn [ctx] {:location (format "/postbox/%s" (::id ctx))})
   :handle-ok (pr-str (ds/query Classes)))
@@ -57,33 +58,9 @@
 
 
 
-
-
-;(defroutes routes
-           ;(GET "/" [] (index))
-           ;(GET "/classes" [] (classes))
-           ;(POST "/classes" {params :edn-body} (create-class params))
-           ;(PUT "/classes" {params :edn-body} (update-class params))
-           ;(route/files "/" {:root "resources/public"})))))
-
 (defroutes app
            (ANY "/init" [] init)
            (ANY "/classes" [] classes)
-
-           ;(ANY "/details" [] (resource
-           ;                     :available-media-types ["text/html"]
-           ;                     :handle-ok
-           ;                                (fn [_]
-           ;                                   (str "<h1>Hello World</h1><h2>db contains:</h2><p>" (get-current-job) "</p>")))
-           ;
-           ;(GET "/new/:name" [name] (write-db name))
-           ;(GET "/txn" [] (txn))
-           ;(ANY "/secret" [] (resource :available-media-types ["text/html"])
-           ;            :exists? (fn [ctx]
-           ;                       (= "tiger" (get-in ctx [:request :params "word"])))
-           ;            :handle-ok "You found the secret word!"
-           ;            :handle-not-found tiger-not-found)
-           ;
            (GET  "/app/" [] (resource-response "index.html" {:root "public/html"}))
            (route/resources "/app/")
            (route/not-found (resource-response "404.html" {:root "public/html"})))

@@ -113,6 +113,38 @@
                (when err-msg
                  (dom/div nil err-msg))))))
 
+; {:classes
+; {:url "/classes",
+; :coll [
+; {:class/title "The Structure and Interpretation of Computer Programs y",
+; :class/id "6001",
+; :class/professor {:db/id 17592186045426},
+; :class/students #{
+; {:db/id 17592186045430} {:db/id 17592186045429}
+; {:db/id 17592186045428} {:db/id 17592186045432}}, :db/id 17592186045422}
+;
+; {:class/title "The Structure and Interpretation of Classical Mechanics",
+; :class/id "6946",
+; :class/professor {:db/id 17592186045425},
+; :class/students #{
+  ; {:db/id 17592186045431}
+  ; {:db/id 17592186045430}
+  ; {:db/id 17592186045428}
+  ; {:db/id 17592186045433}
+; }, :db/id 17592186045423}
+; {:class/title "Linear Algebra",
+; :class/id "1806",
+; :class/professor {:db/id 17592186045427},
+; :class/students #{
+  ; {:db/id 17592186045431}
+  ; {:db/id 17592186045429}
+  ; {:db/id 17592186045428}
+; },
+; :db/id 17592186045424
+; }
+; ]}}
+
+
 (let [tx-chan (chan)
       tx-pub-chan (async/pub tx-chan (fn [_] :txs))]
   (edn-xhr
