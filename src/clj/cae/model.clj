@@ -17,6 +17,6 @@
            [id
             title
             ^:clj history
-            done]
+            status]
            :key :id)
 

@@ -1,6 +1,6 @@
 (def appengine-version "1.9.58")
 
-(defproject om-async "0.1.0-SNAPSHOT"
+(defproject focal-woods "0.1.0-SNAPSHOT"
 
   :jvm-opts ^:replace ["-Xmx1g" "-server"]
 
@@ -14,7 +14,6 @@
                  [cljsjs/react-dom "15.6.1-1"]
                  [camel-snake-kebab "0.4.0"]
 
-                 [om-sync "0.1.1"]
                  [ring "1.6.3"]
 
                  [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
@@ -56,7 +55,7 @@
                         :figwheel     true
                         :compiler     {:output-to     "resources/public/js/main.js"
                                        :output-dir    "resources/public/js/out"
-                                       :main          om-async.core
+                                       :main          focal-todo.core
                                        :asset-path    "js/out"
                                        :optimizations :none
                                        :source-map    true}}
@@ -69,6 +68,7 @@
                         :compiler     {:output-to     "resources/public/js/main.js"
                                        :output-dir    "resources/public/js/"
                                        :asset-path    "js"
+                                       :main          focal-todo.core
                                        :optimizations :advanced}}]})
 
 

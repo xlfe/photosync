@@ -4,10 +4,11 @@
             [ring.middleware.reload :refer [wrap-reload]]
             [ring.util.response :refer [resource-response]]
             [clojure.tools.logging :as log]
+            [cae.util :as util]
             [liberator.core :refer [resource defresource]]
             [clojure.edn :as edn]
             [cae.datastore :as ds]
-            [cae.model]
+            [cae.model :as model]
             [compojure.route :as route])
   (:import
     [cae.model Classes]))
@@ -49,18 +50,43 @@
   :handle-ok (pr-str (ds/query Classes)))
 
 
+(defn map->nsmap
+  [m n]
+  (reduce-kv (fn [acc k v]
+               (let [new-kw
+                              (keyword (str n) (name k))]
+                 (assoc acc new-kw v)))
+             {} m))
+
+(defn fake-datomic
+  "add a namespace to keys to look like a datom"
+  [e]
+  (let [kind
+        (->> (util/->kebab-case (ds/entity-kind e)))]
+    (map->nsmap e kind)))
+
+
+
 (defresource
   init
   edn-api-defaults
   :allowed-methods [:get]
   :handle-ok (pr-str
-               {:classes {:url "/classes" :coll (ds/query Classes)}}))
+               {:classes {:url "/classes" :coll (map fake-datomic (ds/query Classes))}}))
 
 
 
 (defroutes app
            (ANY "/init" [] init)
            (ANY "/classes" [] classes)
+           (ANY "/jobs" [:as req]
+                 (fn [req]
+                   (let [job (model/make-classes
+                               {:id        (str (java.util.UUID/randomUUID))
+                                :title "testing one two three"
+                                :status    "complete"})] ;; FIXME "created"
+                     (prn :created-job job)
+                     (ds/save! job) 200 "test")))
            (GET  "/app/" [] (resource-response "index.html" {:root "public/html"}))
            (route/resources "/app/")
            (route/not-found (resource-response "404.html" {:root "public/html"})))
