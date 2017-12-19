@@ -13,10 +13,11 @@
 ;  (let [keys (get-in config/app [:db key-id])]
 ;    (if (= :* keys) (into {} e) (select-keys e keys))))
 
-(defentity Classes
+(defentity Todo
            [id
             title
-            ^:clj history
-            status]
+            ;^:clj history
+            completed
+            created]
            :key :id)
 

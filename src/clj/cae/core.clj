@@ -1,17 +1,17 @@
 (ns cae.core
   (:require [compojure.core :refer [defroutes ANY GET POST]]
             [ring.middleware.params :refer [wrap-params]]
+            [clojure.walk :as walk]
             [ring.middleware.reload :refer [wrap-reload]]
             [ring.util.response :refer [resource-response]]
             [clojure.tools.logging :as log]
             [cae.util :as util]
             [liberator.core :refer [resource defresource]]
             [clojure.edn :as edn]
-            [cae.datastore :as ds]
+            [cae.parser :as parser]
+            [om.next.server :as om]
             [cae.model :as model]
-            [compojure.route :as route])
-  (:import
-    [cae.model Classes]))
+            [compojure.route :as route]))
 
 (def edn-api-defaults
   {
@@ -73,6 +73,19 @@
   :allowed-methods [:get]
   :handle-ok (pr-str
                {:classes {:url "/classes" :coll (map fake-datomic (ds/query Classes))}}))
+
+
+
+(defn api [req]
+  (let [data ((om/parser {:read parser/readf :mutate parser/mutatef})
+               {:conn (:datomic-connection req)} (:transit-params req))
+        data' (walk/postwalk (fn [x]
+                               (if (and (sequential? x) (= :result (first x)))
+                                 [(first x) (dissoc (second x) :db-before :db-after :tx-data)]
+                                 x))
+                             data)]
+    (pr-str data')))
+
 
 
 

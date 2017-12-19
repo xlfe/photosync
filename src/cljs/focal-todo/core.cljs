@@ -77,6 +77,6 @@
     {:state     (atom {})
      :normalize true
      :parser    (om/parser {:read p/read :mutate p/mutate})
-     :send      (util/transit-post "/aapi")}))
+     :send      (util/edn-post "/api")}))
 
 (om/add-root! reconciler Todos (gdom/getElement "todoapp"))

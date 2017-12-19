@@ -11,6 +11,12 @@
     word
     (str word "s")))
 
-(defn transit-post [url]
+(defn edn-post [url]
   (fn [{:keys [remote]} cb]
-    (.send XhrIo url)))
+    (.send XhrIo url
+           (fn [e]
+             (this-as this
+               (cb (prn-str (.getResponseText this)))))
+           "POST" remote
+           #js {"Content-Type" "application/edn"})))
+
