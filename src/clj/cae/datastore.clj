@@ -182,3 +182,23 @@
          (.prepare (datastore-service))
          (apply-fetch-options {:limit limit :offset offset})
          (map #(as-entity ns kind %)))))
+
+
+(defn map->nsmap
+  [m n]
+  (reduce-kv (fn [acc k v]
+               (let [new-kw
+                     (if
+                       (= "id" (name k))
+                       (keyword "db" (name k))
+                       (keyword (str n) (name k)))]
+                 (assoc acc new-kw v)))
+             {} m))
+
+(defn fake-datomic
+  "add a namespace to keys to look like a datom"
+  [e]
+  (let [kind
+        (->> (util/->kebab-case (entity-kind e)))]
+    (map->nsmap e kind)))
+

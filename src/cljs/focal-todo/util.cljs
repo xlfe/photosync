@@ -1,4 +1,5 @@
 (ns focal-todo.util
+  (:require [cljs.reader :as reader])
   (:import [goog.net XhrIo]))
 
 (defn hidden [is-hidden]
@@ -16,7 +17,7 @@
     (.send XhrIo url
            (fn [e]
              (this-as this
-               (cb (prn-str (.getResponseText this)))))
-           "POST" remote
+               (cb (reader/read-string (.getResponseText this)))))
+           "POST" (prn-str remote)
            #js {"Content-Type" "application/edn"})))
 

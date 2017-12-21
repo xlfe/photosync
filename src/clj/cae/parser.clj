@@ -1,6 +1,7 @@
 (ns cae.parser
   (:require
     [cae.datastore :as ds]
+    [clojure.tools.logging :as log]
     [cae.model :as model])
   (:refer-clojure :exclude [read])
   (:import
@@ -16,29 +17,21 @@
   {:value {:error (str "No handler for read key " k)}})
 
 (defn todos
-  ([db]
-   (todos db nil))
-  ([db selector]
-   (todos db selector nil))
-  ([db selector {:keys [filter as-of]}]
-   (let [db (cond-> db
-              as-of (fn [] (seq [])))
-         q  (cond->
-              '[:find [(pull ?eid selector) ...]
-                :in $ selector
-                :where
-                [?eid :todo/created]]
-              (= :completed filter) (conj '[?eid :todo/completed true])
-              (= :active filter)    (conj '[?eid :todo/completed false]))]
-     (true q db (or selector '[*])))))
+  ([]
+   (into [] (map ds/fake-datomic (ds/query Todo))))
+  ([selector]
+   (ds/query
+     Todo
+     :filter [:= :id selector])))
 
 (defmethod readf :todos/by-id
-  [{:keys [conn query]} _ {:keys [id]}]
-  {:value (true @(true conn) (or query '[*]) id)})
+  [{:keys [query]} _ {:keys [id]}]
+  ;{:value (ds/retrieve Todo id)}
+  {:value (todos)})
 
 (defmethod readf :todos/list
-  [{:keys [conn query]} _ params]
-  {:value (todos (true conn) query params)})
+  [{:keys [query]} _ params]
+  {:value (todos)})
 
 ;; =============================================================================
 ;; Mutations
