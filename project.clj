@@ -4,14 +4,14 @@
 
   :jvm-opts ^:replace ["-Xmx1g" "-server"]
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/core.async "0.3.443"]
                  [org.clojure/tools.logging "0.4.0"]
-                 [org.omcljs/om "1.0.0-beta1" :exclusions [cljsjs/react cljsjs/react-dom]]
-                 [cljs-react-material-ui "0.2.48"]
-                 [cljsjs/react "15.6.1-1"]
-                 [cljsjs/react-dom "15.6.1-1"]
+                 [org.omcljs/om "1.0.0-beta2-SNAPSHOT" :exclusions [cljsjs/react cljsjs/react-dom]]
+                 [cljs-react-material-ui "0.2.50"]
+                 [cljsjs/react "16.2.0-3"]
+                 [cljsjs/react-dom "16.2.0-3"]
                  [camel-snake-kebab "0.4.0"]
 
                  [ring "1.6.3"]
