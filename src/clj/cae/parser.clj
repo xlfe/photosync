@@ -31,6 +31,7 @@
 
 (defmethod readf :todos/list
   [{:keys [query]} _ params]
+  (println query _)
   {:value (todos)})
 
 ;; =============================================================================

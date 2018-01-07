@@ -1,5 +1,9 @@
 (ns focal-todo.item
   (:require [clojure.string :as string]
+            [cljsjs.material-ui]                            ; I recommend adding this at the beginning of core file
+    ;  so React is always loaded first. It's not always needed
+            [cljs-react-material-ui.core :as ui]
+            [cljs-react-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]
             [focal-todo.util :refer [hidden pluralize]]))
@@ -45,20 +49,29 @@
 ;; Todo Item
 
 (defn checkbox [c {:keys [:db/id :todo/completed]}]
-  (dom/input
-    #js {:className "toggle"
-         :type      "checkbox"
-         :checked   (and completed "checked")
-         :onChange  (fn [_]
+  (ui/checkbox
+    {
+     :className "toggle"
+     :type      "checkbox"
+     :checked   (and completed "checked")
+         :onCheck  (fn [_]
                       (om/transact! c
                         `[(todo/update
                             {:db/id ~id :todo/completed ~(not completed)})
                           '[:todos/by-id ~id]]))}))
 
 (defn label [c {:keys [todo/title] :as props}]
-  (dom/label
-    #js {:onDoubleClick (fn [e] (edit c props))}
-    title))
+  #js {
+       :onDoubleClick (fn [e] (edit c props))}
+
+
+  title)
+  ;(ui/text-field
+  ;  {
+  ;   :value title
+  ;   :underlineShow false
+  ;   :onDoubleClick (fn [e] (edit c props)))
+
 
 (defn delete-button [c {:keys [db/id]}]
   (dom/button
@@ -69,26 +82,26 @@
   (dom/input
     #js {:ref       "editField"
          :className "edit"
-         :value     (om/get-state c :edit-text)
+         :value     (or (om/get-state c :edit-text) "")
          :onBlur    #(submit c props %)
          :onChange  #(change c %)
          :onKeyDown #(key-down c props %)}))
 
-(defui TodoItem
+(defui ^:once TodoItem
   static om/Ident
   (ident [this {:keys [db/id]}]
     [:todos/by-id id])
 
   static om/IQuery
   (query [this]
-    [:db/id :todo/editing :todo/completed :todo/title])
+    [:db/id :todo/completed :todo/title])
 
   Object
   (componentDidUpdate [this prev-props prev-state]
     (when (and (:todo/editing (om/props this))
                (om/get-state this :needs-focus))
       (let [node (dom/node this "editField")
-            len  (.. node -value -length)]
+            len  (.. node -primaryText -value -length)]
         (.focus node)
         (.setSelectionRange node len len))
       (om/update-state! this assoc :needs-focus nil)))
@@ -99,11 +112,17 @@
           class (cond-> ""
                   completed (str "completed ")
                   editing   (str "editing"))]
-      (dom/li #js {:className class}
-        (dom/div #js {:className "view"}
-          (checkbox this props)
-          (label this props)
-          (delete-button this props))
-        (edit-field this props)))))
+      (ui/list-item ;#js {:className class}
+        {
+         :leftCheckbox (checkbox this props)
+         :primaryText (label this props)}))))
+
+
+
+        ;(dom/div #js {:className "view"}
+        ;  (checkbox this props)
+        ;  (label this props)
+        ;  (delete-button this props)}
+        ;(edit-field this props)))))
 
 (def item (om/factory TodoItem {:keyfn :db/id}))
