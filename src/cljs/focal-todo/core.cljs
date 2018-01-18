@@ -18,21 +18,10 @@
 
 (enable-console-print!)
 
-(defn main [todos {:keys [todos/list] :as props}]
-  (let [checked? (every? :todo/completed list)]
-    (dom/section #js {:id "main" :style (hidden (empty? list))}
-     (ui/checkbox
-       {
-        :id       "toggle-all"
-        :onCheck (fn [_]
-                    (om/transact! todos
-                          `[(todos/toggle-all
-                              {:value ~(not checked?)})
-                            :todos/list]))
-        :checked  checked?})
-     (ui/list
-       {:id "todo-list"}
-       (map item/item list)))))
+(defn main [todos {:keys [todos/list]}]
+  (ui/list
+     {:id "todo-list"}
+     (map item/item list)))
 
 (defn clear-button [todos completed]
   (when (pos? completed)
@@ -41,15 +30,18 @@
            :onClick (fn [_] (om/transact! todos `[(todos/clear)]))}
       (str "Clear completed (" completed ")"))))
 
-(defn footer [todos props active completed]
-  (dom/footer #js {:id "footer" :style (hidden (empty? (:todos/list props)))}
-    (dom/span #js {:id "todo-count"}
-      (dom/strong nil active)
-      (str " " (pluralize active "item") " left"))
-    (apply dom/ul #js {:id "filters" :className (name (:todos/showing props))}
-      (map (fn [[x y]] (dom/li nil (dom/a #js {:href (str "#/" x)} y)))
-        [["" "All"] ["active" "Active"] ["completed" "Completed"]]))
-    (clear-button todos completed)))
+(defn footer
+  [todos props active completed]
+  (dom/div #js {:className "bottom row"}
+   (dom/div #js {:className "col-lg-offset-3 col-lg-6 col-xsm-12"}
+    (ui/paper {:zdepth 1}
+      (ui/bottom-navigation nil
+       (ui/bottom-navigation-item {
+                                   :icon (ic/content-select-all) :label "All"
+                                   :onClick  (fn [_] (om/transact! todos `[(todos/clear)]))})
+
+       (ui/bottom-navigation-item {:icon (ic/action-update) :label "Active"})
+       (ui/bottom-navigation-item {:icon (ic/action-done-all) :label "Completed"}))))))
 
 (defui ^:once Todos
   static om/IQueryParams
@@ -65,27 +57,40 @@
     (let [props (merge (om/props this) {:todos/showing :all})
           {:keys [todos/list]} props
           active (count (remove :todo/completed list))
+          checked? (every? :todo/completed list)
           completed (- (count list) active)]
       (ui/mui-theme-provider
         {:mui-theme (ui/get-mui-theme
                       {:palette                             ; You can use either camelCase or kebab-case
-                       {:primary1-color (ui/color :deep-purple-500)}
-                       :raised-button
-                       {:primary-text-color (ui/color :light-black)
-                        :font-weight        200}})}
-        (dom/div nil
-          (ui/app-bar {:title "Todos App"})
-          (dom/header #js {:id "header"}
-            (dom/h1 nil "todos")
-            (ui/text-field
-              {:ref "newField"
-               :id "new-todo"
-               :placeholder "What needs to be done?"})
-               ;:onKeyDown #(do %)})
-            (main this props)
-            (footer this props active completed)))))))
+                       {:primary1-color (ui/color :deep-purple-500)}})}
+                      ; :raised-button
+                      ; {:primary-text-color (ui/color :light-black)})}
+        (dom/div []
+         (ui/app-bar {
+                      :iconElementLeft (ui/icon-button
+                                         {
+                                          ;:id "toggle-all"
+                                          ;:disabled false
+                                          :onClick (fn [_]
+                                                      (om/transact! this
+                                                       `[(todos/toggle-all
+                                                           {:value ~(not checked?)})
+                                                         :todos/list]))}
+                                         (ic/action-done))
+                      :title "Syncro A"})
 
-(def todos (om/factory Todos))
+         (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
+           (ui/text-field
+                  {:ref "newField"
+                   :id "new-todo"
+                   :className "box"
+                   :placeholder "What needs to be DONE?"})
+                   ;:onKeyDown #(do %)})
+           (main this props))
+         (footer this props active completed))))))
+
+
+;(def todos (om/factory Todos))
 
 (defonce reconciler
   (om/reconciler
@@ -94,15 +99,12 @@
      :parser    (om/parser {:read p/read :mutate p/mutate})
      :send      (util/edn-post "/api")}))
 
-;(om/add-root! reconciler Todos (gdom/getElement "todoapp"))
-
-(defonce root (atom nil))
-
-(defn init []
-  (if (nil? @root)
-    (let [target (js/document.getElementById "todoapp")]
-      (om/add-root! reconciler Todos target)
-      (reset! root Todos))
-    (.forceUpdate (om/class->any reconciler Todos))))
-
-(init)
+(om/add-root! reconciler Todos (js/document.getElementById "app"))
+;(defonce root (atom nil))
+;(defn init []
+;  (if (nil? @root)
+;    (let [target (js/document.getElementById "app")]
+;      (om/add-root! reconciler Todos target)
+;      (reset! root Todos)
+;    (.forceUpdate (om/class->any reconciler Todos)))
+;(init)

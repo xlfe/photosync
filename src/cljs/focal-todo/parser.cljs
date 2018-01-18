@@ -39,7 +39,8 @@
 
 (defmethod mutate 'todos/clear
   [{:keys [state]} _ _]
-  {:action
+  {:remote true
+   :action
    (fn []
      (let [st @state]
        (swap! state update-in [:todos/list]

@@ -48,17 +48,15 @@
 ;; -----------------------------------------------------------------------------
 ;; Todo Item
 
-(defn checkbox [c {:keys [:db/id :todo/completed]}]
+(defn checkbox [c {:keys [:db/id :todo/title :todo/completed]}]
   (ui/checkbox
     {
-     :className "toggle"
-     :type      "checkbox"
-     :checked   (and completed "checked")
-         :onCheck  (fn [_]
-                      (om/transact! c
-                        `[(todo/update
-                            {:db/id ~id :todo/completed ~(not completed)})
-                          '[:todos/by-id ~id]]))}))
+     :checked completed
+     :onCheck (fn [_]
+                (om/transact!
+                  c
+                  `[(todo/update {:db/id ~id :todo/completed ~(not completed)}) '[:todos/by-id ~id]]))}))
+
 
 (defn label [c {:keys [todo/title] :as props}]
   #js {
@@ -107,18 +105,15 @@
       (om/update-state! this assoc :needs-focus nil)))
 
   (render [this]
-    (let [props (om/props this)
-          {:keys [todo/completed todo/editing]} props
-          class (cond-> ""
-                  completed (str "completed ")
-                  editing   (str "editing"))]
+    (let [props (om/props this)]
+          ;{:keys [completed editing]} props]
+          ;class (cond-> ""
+          ;        completed (str "completed ")
+          ;        editing   (str "editing")]
       (ui/list-item ;#js {:className class}
         {
-         :leftCheckbox (checkbox this props)
-         :primaryText (label this props)}))))
-
-
-
+         :primaryText (:todo/title props)
+         :leftCheckbox (checkbox this props)}))))
         ;(dom/div #js {:className "view"}
         ;  (checkbox this props)
         ;  (label this props)
