@@ -18,10 +18,7 @@
 
 (enable-console-print!)
 
-(defn main [todos {:keys [todos/list]}]
-  (ui/list
-     {:id "todo-list"}
-     (map item/item list)))
+(defn main [todos {:keys [todos/list]}])
 
 (defn clear-button [todos completed]
   (when (pos? completed)
@@ -33,7 +30,7 @@
 (defn footer
   [todos props active completed]
   (dom/div #js {:className "bottom row"}
-   (dom/div #js {:className "col-lg-offset-3 col-lg-6 col-xsm-12"}
+   (dom/div #js {:className "col-lg-12"}
     (ui/paper {:zdepth 1}
       (ui/bottom-navigation nil
        (ui/bottom-navigation-item {
@@ -80,14 +77,20 @@
                       :title "Syncro A"})
 
          (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-           (ui/text-field
-                  {:ref "newField"
-                   :id "new-todo"
-                   :className "box"
-                   :placeholder "What needs to be DONE?"})
-                   ;:onKeyDown #(do %)})
-           (main this props))
-         (footer this props active completed))))))
+           (ui/paper
+             (ui/list
+              (ui/subheader "New todo -")
+              (ui/list-item {
+                                :primaryText (ui/text-field
+                                                    {:ref "newField"
+                                                     :id "new-todo"
+                                                     :placeholder "What needs to be done?"
+                                                     :onKeyDown (fn [e] (item/key-down this props e))})})
+              (ui/divider {:inset true})
+              (ui/subheader "Existing todos")
+              (map item/item list))
+            (ui/divider {:inset true})
+            (footer this props active completed))))))))
 
 
 ;(def todos (om/factory Todos))

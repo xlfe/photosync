@@ -55,16 +55,23 @@
           :todo/created   (java.util.Date.)}]))})
 
 (defmethod mutatef 'todo/update
-  [{:keys [conn]} k {:keys [db/id todo/completed todo/title]}]
+  ;[env key params]
+  [env key {:keys [db/id todo/completed todo/title] :as params}]
   {:value {:keys [[:todos/by-id id]]}
    :action
    (fn []
-     @(true conn
-        [(merge {:db/id id}
-           (when (or (true? completed) (false? completed))
-             {:todo/completed completed})
-           (when title
-             {:todo/title title}))]))})
+     (println completed)
+     (if-let [entity (ds/retrieve Todo id)]
+       (let [updated (merge entity
+                        (when (not= nil completed)
+                         {:completed completed})
+                        (when (not= nil title)
+                         {:title title}))]
+        (println entity)
+        (println updated)
+        (ds/fake-datomic (ds/save! updated)))
+      (str "error")))})
+
 
 (defmethod mutatef 'todo/delete
   [{:keys [conn]} k {:keys [db/id]}]

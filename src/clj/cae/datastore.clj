@@ -202,3 +202,12 @@
         (->> (util/->kebab-case (entity-kind e)))]
     (map->nsmap e kind)))
 
+
+(defn ?assoc
+  "Same as assoc, but skip the assoc if v is nil"
+  [m & kvs]
+  (->> kvs
+       (partition 2)
+       (filter second)
+       (map vec)
+       (into m)))

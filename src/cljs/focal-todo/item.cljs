@@ -48,6 +48,13 @@
 ;; -----------------------------------------------------------------------------
 ;; Todo Item
 
+;(defn label [c {:keys [todo/title] :as props}]
+;  title
+  ;(ui/text-field
+  ;  {
+  ;   :value title)
+  ;   :onDoubleClick (fn [e] (edit c props))))
+;
 (defn checkbox [c {:keys [:db/id :todo/title :todo/completed]}]
   (ui/checkbox
     {
@@ -55,20 +62,9 @@
      :onCheck (fn [_]
                 (om/transact!
                   c
-                  `[(todo/update {:db/id ~id :todo/completed ~(not completed)}) '[:todos/by-id ~id]]))}))
+                  `[(todo/update {:db/id ~id :todo/completed ~(not completed)}) '[:todos/by-id ~id]])
+                (doto _ (.preventDefault) (.stopPropagation)))}))
 
-
-(defn label [c {:keys [todo/title] :as props}]
-  #js {
-       :onDoubleClick (fn [e] (edit c props))}
-
-
-  title)
-  ;(ui/text-field
-  ;  {
-  ;   :value title
-  ;   :underlineShow false
-  ;   :onDoubleClick (fn [e] (edit c props)))
 
 
 (defn delete-button [c {:keys [db/id]}]
@@ -113,7 +109,13 @@
       (ui/list-item ;#js {:className class}
         {
          :primaryText (:todo/title props)
-         :leftCheckbox (checkbox this props)}))))
+         :primaryTogglesNestedList true
+         :onClick (fn [_]
+                   (doto _ (.preventDefault) (.stopPropagation)))
+         :onDoubleClick (fn [e] (edit this props))
+         :leftCheckbox (checkbox this props)
+         :rightIconButton (ui/icon-button (ic/action-delete))}))))
+
         ;(dom/div #js {:className "view"}
         ;  (checkbox this props)
         ;  (label this props)
