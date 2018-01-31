@@ -1,4 +1,4 @@
-(ns cae.util
+(ns photosync.util
   (:require
     [camel-snake-kebab.core :as csk])
   (:import

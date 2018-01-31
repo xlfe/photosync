@@ -1,7 +1,7 @@
-(ns cae.datastore
+(ns photosync.datastore
   (:require
-    [cae.services :refer [defservice]]
-    [cae.util :as util]
+    [photosync.services :refer [defservice]]
+    [photosync.util :as util]
     [clojure.edn :as edn])
   (:import
     [com.google.appengine.api.datastore

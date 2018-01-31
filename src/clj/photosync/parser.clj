@@ -1,11 +1,11 @@
-(ns cae.parser
+(ns photosync.parser
   (:require
-    [cae.datastore :as ds]
+    [photosync.datastore :as ds]
     [clojure.tools.logging :as log]
-    [cae.model :as model])
+    [photosync.model :as model])
   (:refer-clojure :exclude [read])
   (:import
-    [cae.model Todo]))
+    [photosync.model Todo]))
 
 ;; =============================================================================
 ;; Reads

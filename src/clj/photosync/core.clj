@@ -1,17 +1,17 @@
-(ns cae.core
+(ns photosync.core
   (:require [compojure.core :refer [defroutes ANY GET POST]]
             [ring.middleware.params :refer [wrap-params]]
             [clojure.walk :as walk]
-            [cae.datastore :as ds]
+            [photosync.datastore :as ds]
             [ring.middleware.reload :refer [wrap-reload]]
             [ring.util.response :refer [resource-response]]
             [clojure.tools.logging :as log]
-            [cae.util :as util]
+            [photosync.util :as util]
             [liberator.core :refer [resource defresource]]
             [clojure.edn :as edn]
-            [cae.parser :as parser]
+            [photosync.parser :as parser]
             [om.next.server :as om]
-            [cae.model :as model]
+            [photosync.model :as model]
             [compojure.route :as route]))
 
 (def edn-api-defaults

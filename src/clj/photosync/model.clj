@@ -1,10 +1,5 @@
-(ns cae.model
-  (:require
-  ;  [[cae.services :as services]
-  ;   [user :as user]
-     [cae.datastore :refer [defentity]]))
-  ;   ]
-  ;  )
+(ns photosync.model
+  (:require [photosync.datastore :refer [defentity]]))
 
 
 

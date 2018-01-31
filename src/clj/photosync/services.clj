@@ -1,4 +1,4 @@
-(ns cae.services)
+(ns photosync.services)
 
 (defmacro defservice
   [name var type ctor]
