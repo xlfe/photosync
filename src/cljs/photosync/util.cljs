@@ -1,4 +1,4 @@
-(ns focal-todo.util
+(ns photosync.util
   (:require [cljs.reader :as reader])
   (:import [goog.net XhrIo]))
 

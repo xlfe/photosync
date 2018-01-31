@@ -1,4 +1,4 @@
-(ns focal-todo.item
+(ns photosync.item
   (:require [clojure.string :as string]
             [cljsjs.material-ui]                            ; I recommend adding this at the beginning of core file
     ;  so React is always loaded first. It's not always needed
@@ -6,7 +6,7 @@
             [cljs-react-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]
-            [focal-todo.util :refer [hidden pluralize]]))
+            [photosync.util :refer [hidden pluralize]]))
 
 (def ESCAPE_KEY 27)
 (def ENTER_KEY 13)

@@ -1,4 +1,4 @@
-(ns focal-todo.parser
+(ns photosync.parser
   (:require [om.next :as om]))
 
 ;; =============================================================================

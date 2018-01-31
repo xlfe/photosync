@@ -1,4 +1,4 @@
-(ns focal-todo.core
+(ns photosync.core
   (:require [goog.events :as events]
             [goog.dom :as gdom]
             [cljsjs.material-ui]                            ; I recommend adding this at the beginning of core file
@@ -7,9 +7,9 @@
             [cljs-react-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]
-            [focal-todo.util :as util :refer [hidden pluralize]]
-            [focal-todo.item :as item]
-            [focal-todo.parser :as p])
+            [photosync.util :as util :refer [hidden pluralize]]
+            [photosync.item :as item]
+            [photosync.parser :as p])
   (:import [goog History]
            [goog.history EventType]))
 
