@@ -1,6 +1,6 @@
-(def appengine-version "1.9.58")
+(def appengine-version "1.9.60")
 
-(defproject focal-woods "0.1.0-SNAPSHOT"
+(defproject photosync "0.0.1-SNAPSHOT"
 
   :jvm-opts ^:replace ["-Xmx1g" "-server"]
 
@@ -38,7 +38,7 @@
              :dev
              {
               :repl-options {
-                             :init-ns cae.appengine
+                             :init-ns photosync.appengine
                              :init    (start-it)}
 
               :source-paths ["dev/"]
@@ -54,22 +54,22 @@
                                     :figwheel     true
                                     :compiler     {:output-to     "resources/public/js/main.js"
                                                    :output-dir    "resources/public/js/out"
-                                                   :main          focal-todo.core
+                                                   :main          photosyn.core
                                                    :asset-path    "js/out"
                                                    :optimizations :none
-                                                   :source-map    true}
-                                    }
+                                                   :source-map    true}}
+
                        :production {
                                     :source-paths ["src/cljs"]
                                     ;:figwheel     false
                                     :compiler     {:output-to     "resources/public/js/main.js"
                                                    :output-dir    "resources/public/js/"
                                                    :asset-path    "js"
-                                                   :optimizations :advanced}
-                                    }
-                       }
-              }
-)
+                                                   :optimizations :advanced}}}})
+
+
+
+
 
 
 

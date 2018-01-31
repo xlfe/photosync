@@ -1,5 +1,5 @@
-(ns cae.appengine
-  (:require [cae.core :as handler])
+(ns photosync.appengine
+  (:require [photosync.core :as handler])
   (:use ring.adapter.jetty))
 
 (def myport 8080)
