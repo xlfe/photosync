@@ -17,7 +17,9 @@
     (.send XhrIo url
            (fn [e]
              (this-as this
-               (cb (reader/read-string (.getResponseText this)))))
+               (if (.isSuccess this)
+                 (cb (reader/read-string (.getResponseText this)))
+                 (cb (str "ERROR: " (.getStatus this))))))
            "POST" (prn-str remote)
            #js {"Content-Type" "application/edn"})))
 

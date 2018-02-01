@@ -13,7 +13,50 @@
             [photosync.parser :as parser]
             [om.next.server :as om]
             [photosync.model :as model]
+            [photosync.secrets :as secrets]
+
+
+            [cheshire.core :as json]
+            [buddy.sign.jwt :as jwt]
+            [buddy.auth :refer [authenticated? throw-unauthorized]]
+            [buddy.auth.backends :as backends]
+            [buddy.auth.middleware :refer (wrap-authentication)]
+
             [compojure.route :as route]))
+
+;
+; Authentication
+;
+
+
+;(defn unauthorized-handler
+;  [request metadata]
+;  (-> (response "Unauthorized APP request")
+;      (assoc :status 403))
+;
+(def auth-backend (backends/jws
+                    {:secret secrets/jws-secret
+                     ;:unauthorized-handler unauthorized-handler
+                     :options {:alg :hs512}}))
+
+
+;(defn generate-auth-token
+;  [request]
+;  (let [data (:form-params request)
+;        user (find-user (:username data)   ;; (implementation ommited)
+;                        (:password data)})
+;        token (jwt/sign {:user (:id user)} secret)
+;    {:status 200
+;     :body (json/encode {:token token})
+;     :headers {:content-type "application/json"})
+
+
+
+;
+;
+; Other stuff
+;
+
 
 (def edn-api-defaults
   {
@@ -21,7 +64,7 @@
 
 (def edn-api-loggedin
   (merge edn-api-defaults
-         {:authorized? false}))
+         {:authorized? authenticated?}))
 
 (defn read-inputstream-edn [input]
   (edn/read
@@ -38,7 +81,6 @@
 
 
 
-;
 ;(defresource
 ;  classes
 ;  edn-api-defaults
@@ -63,15 +105,19 @@
 
 
 
-(defn api [req]
-  (let [data ((om/parser {:read parser/readf :mutate parser/mutatef})
-              {} (:edn-body req))
-        data' (walk/postwalk (fn [x]
-                               (if (and (sequential? x) (= :result (first x)))
-                                 [(first x) (dissoc (second x) :db-before :db-after :tx-data)]
-                                 x))
-                             data)]
-    (pr-str data')))
+(defresource
+  api
+  edn-api-loggedin
+  :authorized? authenticated?
+  :allowed-methods [:get :post])
+  ;:handle-ok (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}))]
+  ;            {} (:edn-body req)
+  ;      data' (walk/postwalk (fn [x]
+  ;                             (if (and (sequential? x) (= :result (first x)))
+  ;                               [(first x) (dissoc (second x) :db-before :db-after :tx-data)]
+  ;                               x
+  ;                           data
+  ;  (pr-str data'))
 
 
 
@@ -80,15 +126,6 @@
            ;(ANY "/init" [] init)
            ;(ANY "/classes" [] classes)
            (ANY "/api" [] api)
-           (ANY "/jobs" [:as req]
-                 (fn [req]
-                   (let [job (model/make-todo
-                               {:id        (rand-int 10000000)
-                                :title "testing one two three"
-                                :created   (java.util.Date.)
-                                :completed    false})] ;; FIXME "created"
-                     (prn :created-job job)
-                     (ds/save! job) 200 "test")))
            (GET  "/" [] (resource-response "index.html" {:root "public/html"}))
            (route/resources "/")
            (route/not-found (resource-response "404.html" {:root "public/html"})))
@@ -97,8 +134,12 @@
   (-> app
       wrap-params
       wrap-hsts
+      (wrap-authentication auth-backend)
       parse-edn-body))
 
 (def reload-handler
-  (-> prod-handler
+  (-> app
+      wrap-params
+      (wrap-authentication auth-backend)
+      parse-edn-body
       wrap-reload))

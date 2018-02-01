@@ -5,7 +5,7 @@
     [photosync.model :as model])
   (:refer-clojure :exclude [read])
   (:import
-    [photosync.model Todo]))
+    [photosync.model User]))
 
 ;; =============================================================================
 ;; Reads
@@ -18,15 +18,14 @@
 
 (defn todos
   ([]
-   (into [] (map ds/fake-datomic (ds/query Todo))))
+   (into [] (map ds/fake-datomic (ds/query User))))
   ([selector]
    (ds/query
-     Todo
+     User
      :filter [:= :id selector])))
 
 (defmethod readf :todos/by-id
   [{:keys [query]} _ {:keys [id]}]
-  ;{:value (ds/retrieve Todo id)}
   {:value (todos)})
 
 (defmethod readf :todos/list
@@ -61,7 +60,7 @@
    :action
    (fn []
      (println completed)
-     (if-let [entity (ds/retrieve Todo id)]
+     (if-let [entity (ds/retrieve User id)]
        (let [updated (merge entity
                         (when (not= nil completed)
                          {:completed completed})

@@ -8,10 +8,9 @@
 ;  (let [keys (get-in config/app [:db key-id])]
 ;    (if (= :* keys) (into {} e) (select-keys e keys))))
 
-(defentity Todo
+(defentity User
            [id
-            title
-            ;^:clj history
+            email
             completed
             created]
            :key :id)
