@@ -108,18 +108,30 @@
 (defresource
   api
   edn-api-loggedin
-  :authorized? authenticated?
-  :allowed-methods [:get :post])
-  ;:handle-ok (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}))]
-  ;            {} (:edn-body req)
-  ;      data' (walk/postwalk (fn [x]
-  ;                             (if (and (sequential? x) (= :result (first x)))
-  ;                               [(first x) (dissoc (second x) :db-before :db-after :tx-data)]
-  ;                               x
-  ;                           data
-  ;  (pr-str data'))
+  :authorized? true
+  :allowed-methods [:get :post]
+  :post! (fn [req]
+           (dosync
+            (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}) {} (:edn-body req))
+                  data' (walk/postwalk (fn [x]
+                                         (if (and (sequential? x) (= :result (first x)))
+                                           [(first x) (dissoc (second x) :db-before :db-after :tx-data)])
+                                         x)
+                                       data)]
+             {::data data'})))
+  :handle-ok (fn [ctx] (pr-str (::data ctx))))
 
 
+
+(defn api [req]
+  (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}
+               {} (:edn-body req)))
+        data' (walk/postwalk (fn [x]
+                               (if (and (sequential? x) (= :result (first x)))
+                                 [(first x) (dissoc (second x) :db-before :db-after :tx-data)]
+                                 x))
+                             data)]
+    (pr-str data')))
 
 
 (defroutes app
