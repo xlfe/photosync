@@ -7,6 +7,12 @@
             [cljs-react-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]
+
+            [compassus.core :as compassus]
+            [secretary.core :as secretary :refer-macros [defroute]]
+            [goog.history.EventType :as EventType]
+            [goog.events :as evt]
+
             [photosync.util :as util :refer [hidden pluralize]]
             [photosync.item :as item]
             [photosync.parser :as p])
@@ -15,6 +21,8 @@
 
 ;; -----------------------------------------------------------------------------
 ;; Components
+
+
 
 (enable-console-print!)
 
@@ -99,15 +107,35 @@
   (om/reconciler
     {:state     (atom {})
      :normalize true
-     :parser    (om/parser {:read p/read :mutate p/mutate})
+     :parser    (compassus/parser {:read p/read :mutate p/mutate})
      :send      (util/edn-post "/api")}))
 
-(om/add-root! reconciler Todos (js/document.getElementById "app"))
-;(defonce root (atom nil))
-;(defn init []
-;  (if (nil? @root)
-;    (let [target (js/document.getElementById "app")]
-;      (om/add-root! reconciler Todos target)
-;      (reset! root Todos)
-;    (.forceUpdate (om/class->any reconciler Todos)))
-;(init)
+
+(declare app)
+
+(defroute index "/index" []
+          (compassus/set-route! app :index))
+
+
+(def event-key (atom nil))
+(def history
+  (History.))
+
+(def app
+  (compassus/application
+    {:routes  {
+               :index Todos
+               }
+     :index-route :index
+     :reconciler reconciler
+     :mixins [(compassus/did-mount (fn [_]
+                                     (reset! event-key
+                                             (evt/listen history EventType/NAVIGATE
+                                                         #(secretary/dispatch! (.-token %))))
+                                     (.setEnabled history true)))
+              (compassus/will-unmount (fn [_]
+                                        (evt/unlistenByKey @event-key)))]}))
+
+;(om/add-root! reconciler Todos (js/document.getElementById "app"))
+(compassus/mount! app (js/document.getElementById "app"))
+
