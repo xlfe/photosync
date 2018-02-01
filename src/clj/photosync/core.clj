@@ -103,41 +103,27 @@
 ;  :handle-ok (pr-str
 ;               {:classes {:url "/classes" :coll (map fake-datomic (ds/query Classes))}}))))
 
+(defn api [req]
+  (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}) {} (get-in req [:request :edn-body]))]
+    {::data data}))
 
 
 (defresource
-  api
+  api-resource
   edn-api-loggedin
   :authorized? true
   :allowed-methods [:get :post]
-  :post! (fn [req]
-           (dosync
-            (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}) {} (:edn-body req))
-                  data' (walk/postwalk (fn [x]
-                                         (if (and (sequential? x) (= :result (first x)))
-                                           [(first x) (dissoc (second x) :db-before :db-after :tx-data)])
-                                         x)
-                                       data)]
-             {::data data'})))
-  :handle-ok (fn [ctx] (pr-str (::data ctx))))
-
-
-
-(defn api [req]
-  (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}
-               {} (:edn-body req)))
-        data' (walk/postwalk (fn [x]
-                               (if (and (sequential? x) (= :result (first x)))
-                                 [(first x) (dissoc (second x) :db-before :db-after :tx-data)]
-                                 x))
-                             data)]
-    (pr-str data')))
-
+  :post! api
+  :new? false
+  :respond-with-entity? true
+  :handle-ok (fn [ctx]
+                 (println ctx)
+                 (prn-str (::data ctx))))
 
 (defroutes app
            ;(ANY "/init" [] init)
            ;(ANY "/classes" [] classes)
-           (ANY "/api" [] api)
+           (ANY "/api" [] api-resource)
            (GET  "/" [] (resource-response "index.html" {:root "public/html"}))
            (route/resources "/")
            (route/not-found (resource-response "404.html" {:root "public/html"})))
