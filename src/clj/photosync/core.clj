@@ -1,6 +1,7 @@
 (ns photosync.core
   (:require [compojure.core :refer [defroutes ANY GET POST]]
             [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.ssl :refer [wrap-hsts]]
             [clojure.walk :as walk]
             [photosync.datastore :as ds]
             [ring.middleware.reload :refer [wrap-reload]]
@@ -88,13 +89,14 @@
                                 :completed    false})] ;; FIXME "created"
                      (prn :created-job job)
                      (ds/save! job) 200 "test")))
-           (GET  "/app/" [] (resource-response "index.html" {:root "public/html"}))
-           (route/resources "/app/")
+           (GET  "/" [] (resource-response "index.html" {:root "public/html"}))
+           (route/resources "/")
            (route/not-found (resource-response "404.html" {:root "public/html"})))
 
 (def prod-handler
   (-> app
       wrap-params
+      wrap-hsts
       parse-edn-body))
 
 (def reload-handler

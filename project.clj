@@ -15,6 +15,7 @@
                  [camel-snake-kebab "0.4.0"]
 
                  [ring "1.6.3"]
+                 [ring/ring-ssl "0.3.0"]
 
                  [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
                  [liberator "0.15.1"]
@@ -32,7 +33,8 @@
                                     :target-path]
 
   :ring {
-         :handler cae.core/prod-handler}
+         :web-xml "web.xml"
+         :handler photosync.core/prod-handler}
 
   :profiles {
              :dev
@@ -54,7 +56,7 @@
                                     :figwheel     true
                                     :compiler     {:output-to     "resources/public/js/main.js"
                                                    :output-dir    "resources/public/js/out"
-                                                   :main          photosyn.core
+                                                   :main          photosync.core
                                                    :asset-path    "js/out"
                                                    :optimizations :none
                                                    :source-map    true}}
