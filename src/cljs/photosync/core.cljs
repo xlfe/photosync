@@ -86,12 +86,11 @@
                                                    :id "new-todo"
                                                    :placeholder "What needs to be done?"
                                                    :onKeyDown (fn [e] (item/key-down this props e))})})
-            (ui/divider {:inset true})
-            (ui/subheader "Existing todos")
-            ;(compassus/set-route! this :test)
-            (map item/item list))
-          (ui/divider {:inset true})
-          (footer this props active completed))))))
+        (ui/divider {:inset true})
+        (ui/subheader "Existing todos")
+        (map item/item list))
+       (ui/divider {:inset true})
+       (footer this props active completed))))))
 
 
 (defui ^:once Welcome
@@ -104,9 +103,8 @@
           completed (- (count list) active)]
 
       (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-               (ui/paper
-                 (ui/subheader "Welcome"))))))
-
+       ;(ui/raised-button {:label "Modal"})
+       (ui/dialog {:title "Dialog with actions" :open true :modal true})))))
 
 
 
@@ -122,12 +120,13 @@
 
 (declare app)
 
-(defroute index "/index" []
+(defroute index "/" []
           (compassus/set-route! app :index))
 
 
-(defroute firstrun "/welcome" []
+(defroute welcome "/welcome" []
           (compassus/set-route! app :welcome))
+
 
 (def event-key (atom nil))
 (def history
@@ -137,8 +136,8 @@
   (compassus/application
     {:routes  {
                :index Todos
-               :welcome Welcome
-               }
+               :welcome Welcome}
+
      :index-route :index
      :reconciler reconciler
      :mixins [
