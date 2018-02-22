@@ -1,4 +1,6 @@
+WEB-INF/
 target/
+*.iml
 bin/
 .idea/
 .lein-repl-history

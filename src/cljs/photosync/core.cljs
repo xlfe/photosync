@@ -48,6 +48,17 @@
        (ui/bottom-navigation-item {:icon (ic/action-update) :label "Active"})
        (ui/bottom-navigation-item {:icon (ic/action-done-all) :label "Completed"}))))))
 
+(defui ^:once Base
+  Object
+  (render [this]
+    (let [{:keys [owner factory props]} (om/get-computed this)
+          route (compassus/current-route this)]
+      (ui/mui-theme-provider {:mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})}
+       (dom/div []
+        (ui/app-bar {:title "Syncro A"})
+        (factory props))))))
+
+
 (defui ^:once Todos
   static om/IQueryParams
   (params [this]
@@ -64,41 +75,39 @@
           active (count (remove :todo/completed list))
           checked? (every? :todo/completed list)
           completed (- (count list) active)]
-      (ui/mui-theme-provider
-        {:mui-theme (ui/get-mui-theme
-                      {:palette                             ; You can use either camelCase or kebab-case
-                       {:primary1-color (ui/color :deep-purple-500)}})}
-                      ; :raised-button
-                      ; {:primary-text-color (ui/color :light-black)})}
-        (dom/div []
-         (ui/app-bar {
-                      :iconElementLeft (ui/icon-button
-                                         {
-                                          ;:id "toggle-all"
-                                          ;:disabled false
-                                          :onClick (fn [_]
-                                                      (om/transact! this
-                                                       `[(todos/toggle-all
-                                                           {:value ~(not checked?)})
-                                                         :todos/list]))}
-                                         (ic/action-done))
-                      :title "Syncro A"})
 
-         (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-           (ui/paper
-             (ui/list
-              (ui/subheader "New todo -")
-              (ui/list-item {
-                                :primaryText (ui/text-field
-                                                    {:ref "newField"
-                                                     :id "new-todo"
-                                                     :placeholder "What needs to be done?"
-                                                     :onKeyDown (fn [e] (item/key-down this props e))})})
-              (ui/divider {:inset true})
-              (ui/subheader "Existing todos")
-              (map item/item list))
+     (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
+      (ui/paper
+       (ui/list
+        (ui/subheader "New todo -")
+        (ui/list-item {
+                              :primaryText (ui/text-field
+                                                  {:ref "newField"
+                                                   :id "new-todo"
+                                                   :placeholder "What needs to be done?"
+                                                   :onKeyDown (fn [e] (item/key-down this props e))})})
             (ui/divider {:inset true})
-            (footer this props active completed))))))))
+            (ui/subheader "Existing todos")
+            ;(compassus/set-route! this :test)
+            (map item/item list))
+          (ui/divider {:inset true})
+          (footer this props active completed))))))
+
+
+(defui ^:once Welcome
+  Object
+  (render [this]
+    (let [props (merge (om/props this) {:todos/showing :all})
+          {:keys [todos/list]} props
+          active (count (remove :todo/completed list))
+          checked? (every? :todo/completed list)
+          completed (- (count list) active)]
+
+      (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
+               (ui/paper
+                 (ui/subheader "Welcome"))))))
+
+
 
 
 ;(def todos (om/factory Todos))
@@ -107,7 +116,7 @@
   (om/reconciler
     {:state     (atom {})
      :normalize true
-     :parser    (compassus/parser {:read p/read :mutate p/mutate})
+     :parser    (compassus/parser {:read p/read :mutate p/mutate :route-dispatch false})
      :send      (util/edn-post "/api")}))
 
 
@@ -117,6 +126,9 @@
           (compassus/set-route! app :index))
 
 
+(defroute firstrun "/welcome" []
+          (compassus/set-route! app :welcome))
+
 (def event-key (atom nil))
 (def history
   (History.))
@@ -125,10 +137,13 @@
   (compassus/application
     {:routes  {
                :index Todos
+               :welcome Welcome
                }
      :index-route :index
      :reconciler reconciler
-     :mixins [(compassus/did-mount (fn [_]
+     :mixins [
+              (compassus/wrap-render Base)
+              (compassus/did-mount (fn [_]
                                      (reset! event-key
                                              (evt/listen history EventType/NAVIGATE
                                                          #(secretary/dispatch! (.-token %))))

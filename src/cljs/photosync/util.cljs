@@ -1,5 +1,8 @@
 (ns photosync.util
-  (:require [cljs.reader :as reader])
+  (:require
+    [compassus.core :as compassus]
+    [om.next :as om]
+    [cljs.reader :as reader])
   (:import [goog.net XhrIo]))
 
 (defn hidden [is-hidden]
@@ -17,9 +20,11 @@
     (.send XhrIo url
            (fn [e]
              (this-as this
+               (println (.getStatus this))
                (if (.isSuccess this)
                  (cb (reader/read-string (.getResponseText this)))
-                 (cb (str "ERROR: " (.getStatus this))))))
+                 (cb {:compassus.core/route :welcome})
+                 )))
            "POST" (prn-str remote)
            #js {"Content-Type" "application/edn"})))
 

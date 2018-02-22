@@ -111,7 +111,7 @@
 (defresource
   api-resource
   edn-api-loggedin
-  :authorized? true
+  ;:authorized? true
   :allowed-methods [:get :post]
   :post! api
   :new? false
@@ -119,6 +119,7 @@
   :handle-ok (fn [ctx]
                  (println ctx)
                  (prn-str (::data ctx))))
+                 ;(prn-str (merge {:compassus.core/route :index} (::data ctx)))))
 
 (defroutes app
            ;(ANY "/init" [] init)
