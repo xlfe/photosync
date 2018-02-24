@@ -22,6 +22,10 @@
 ;; -----------------------------------------------------------------------------
 ;; Components
 
+(defn set-hash! [loc]
+  (set! (.-hash js/window.location) loc))
+(defn redirect! [loc]
+  (set! (.-location js/window) loc))
 
 
 (enable-console-print!)
@@ -55,7 +59,7 @@
           route (compassus/current-route this)]
       (ui/mui-theme-provider {:mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})}
        (dom/div []
-        (ui/app-bar {:title "Syncro A"})
+        (ui/app-bar {:title "PhotoSync .Net"})
         (factory props))))))
 
 
@@ -103,8 +107,15 @@
           completed (- (count list) active)]
 
       (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-       ;(ui/raised-button {:label "Modal"})
-       (ui/dialog {:title "Dialog with actions" :open true :modal true})))))
+       (ui/dialog {
+                   :actions [
+                             (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
+                             (ui/flat-button {:label "Allow" :primary true :onClick #(redirect! "/login")})]
+
+                   :title "Allow PhotoSync to access your Google Photos?"
+                   :open true :modal true}
+         "PhotoSync requires access to your Google Photos account in order to upload photos")))))
+
 
 
 
@@ -131,6 +142,8 @@
 (def event-key (atom nil))
 (def history
   (History.))
+
+
 
 (def app
   (compassus/application

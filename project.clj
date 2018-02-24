@@ -17,6 +17,8 @@
                  [ring "1.6.3"]
                  [ring/ring-ssl "0.3.0"]
 
+                 [clj-http "3.7.0"]
+
                  [buddy/buddy-auth "2.1.0"]
                  [buddy/buddy-sign "2.2.0"]
                  [cheshire "5.8.0"]
@@ -24,6 +26,7 @@
                  [compassus "1.0.0-alpha3"]
 
                  [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
+                 [com.google.api-client/google-api-client "1.23.0"]
                  [liberator "0.15.1"]
                  [compojure "1.6.0"]]
 
