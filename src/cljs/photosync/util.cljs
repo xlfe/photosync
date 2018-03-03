@@ -23,7 +23,7 @@
                (println (.getStatus this))
                (if (.isSuccess this)
                  (cb (reader/read-string (.getResponseText this)))
-                 (cb {:compassus.core/route :welcome}))))
+                 (cb {:compassus.core/route :login}))))
 
            "POST" (prn-str remote)
            #js {"Content-Type" "application/edn"})))

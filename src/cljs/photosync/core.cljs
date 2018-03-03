@@ -15,6 +15,7 @@
 
             [photosync.util :as util :refer [hidden pluralize]]
             [photosync.item :as item]
+            [photosync.auth :as auth]
             [photosync.parser :as p])
   (:import [goog History]
            [goog.history EventType]))
@@ -97,6 +98,24 @@
        (footer this props active completed))))))
 
 
+(defui ^:once Login
+  Object
+  (render [this]
+   (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
+    (ui/dialog
+      {
+       :actions
+       [
+          (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
+          (ui/flat-button {:label "Login" :primary true :onClick #(auth/sign-in)})]
+          ;(ui/flat-button {:label "Login" :primary true :onClick #(redirect! "/gauth")})]
+
+       :title "Please login using your Google Account"
+       :open true :modal true}
+      "If you haven't logged in before we will
+       ask for access to Google Photos as well"))))
+
+
 (defui ^:once Welcome
   Object
   (render [this]
@@ -134,6 +153,9 @@
 (defroute index "/" []
           (compassus/set-route! app :index))
 
+(defroute login "/login" []
+          (compassus/set-route! app :login))
+
 
 (defroute welcome "/welcome" []
           (compassus/set-route! app :welcome))
@@ -149,6 +171,7 @@
   (compassus/application
     {:routes  {
                :index Todos
+               :login Login
                :welcome Welcome}
 
      :index-route :index
@@ -164,5 +187,9 @@
                                         (evt/unlistenByKey @event-key)))]}))
 
 ;(om/add-root! reconciler Todos (js/document.getElementById "app"))
-(compassus/mount! app (js/document.getElementById "app"))
 
+(defn do-auth []
+  (compassus/mount! app (js/document.getElementById "app"))
+  (auth/google-auth-init app))
+
+(auth/google-auth-load do-auth)

@@ -59,3 +59,31 @@
     (.update md (.getBytes input))
     (let [digest (.digest md)]
       (apply str (mapv #(format "%02x" (bit-and % 0xff)) digest)))))
+
+(defn map->nsmap
+  [m n]
+  (reduce-kv (fn [acc k v]
+               (let [new-kw
+                     (if
+                       (= "id" (name k))
+                       (keyword "db" (name k))
+                       (keyword (str n) (name k)))]
+                 (assoc acc new-kw v)))
+             {} m))
+
+;(defn fake-datomic
+;  "add a namespace to keys to look like a datom"
+;  [e]
+;  (let [kind
+;        (->> (util/->kebab-case (entity-kind e)))
+;    (map->nsmap e kind)))
+
+
+(defn ?assoc
+  "Same as assoc, but skip the assoc if v is nil"
+  [m & kvs]
+  (->> kvs
+       (partition 2)
+       (filter second)
+       (map vec)
+       (into m)))

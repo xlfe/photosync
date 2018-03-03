@@ -24,6 +24,7 @@
                  [cheshire "5.8.0"]
                  [secretary "1.2.3"]
                  [compassus "1.0.0-alpha3"]
+                 [hyperion/hyperion-gae "3.7.1"]
 
                  [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
                  [com.google.api-client/google-api-client "1.23.0"]
@@ -67,6 +68,7 @@
                                                    :output-dir    "resources/public/js/out"
                                                    :main          photosync.core
                                                    :asset-path    "js/out"
+                                                   :infer-externs true
                                                    :optimizations :none
                                                    :source-map    true}}
 
@@ -76,6 +78,7 @@
                                     :compiler     {:output-to     "resources/public/js/main.js"
                                                    :output-dir    "resources/public/js/"
                                                    :asset-path    "js"
+                                                   :infer-externs true
                                                    :optimizations :advanced}}}})
 
 

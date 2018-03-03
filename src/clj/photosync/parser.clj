@@ -1,8 +1,9 @@
 (ns photosync.parser
   (:require
-    [photosync.datastore :as ds]
+    [hyperion.api :as ds]
     [clojure.tools.logging :as log]
-    [photosync.model :as model])
+    [photosync.model :as model]
+    [photosync.util :as util])
   (:refer-clojure :exclude [read])
   (:import
     [photosync.model User]))
@@ -18,7 +19,7 @@
 
 (defn todos
   ([]
-   (into [] (map ds/fake-datomic (ds/query User))))
+   (into [] (map util/fake-datomic (ds/query User))))
   ([selector]
    (ds/query
      User
