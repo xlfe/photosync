@@ -105,7 +105,7 @@
 
 
 (defn check-user [req]
-  (println (str "CHECK USER " req))
+  ;(println (str "CHECK USER " req))
   (not (= nil (:user-info req))))
 
 

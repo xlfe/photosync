@@ -14,7 +14,7 @@
      [created-at]) ; populated automaticaly
 
 (h/defentity google-user
-            [__indexed :default [:email]]
+            [__indexed :default [:email :id]]
             [given_name]
             [email]
             [locale]
@@ -29,11 +29,12 @@
 
 
 (h/defentity OAuthToken
-  [owner :type (ht/foreign-key :googleuser)]
-  [access_token]
-  [refresh_token]
-  [source]
-  [expires])
+            [__indexed :default [:owner]]
+            [owner :type (ht/foreign-key :googleuser)]
+            [access_token]
+            [refresh_token]
+            [source]
+            [expires])
 
 ;access_token  The token that your application sends to authorize a Google API request.
 ;refresh_token  A token that you can use to obtain a new access token. Refresh tokens are valid until the user revokes access. Note that refresh tokens are always returned for installed applications.

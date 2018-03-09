@@ -41,8 +41,6 @@
 (def CLIENT_ID "***REMOVED***.apps.googleusercontent.com")
 (def CLIENT_SECRET "***REMOVED***")
 (def REDIRECT_URI "http://localhost:8080/oauth2callback")
-(def google-user (atom {:google-id "" :google-name "" :google-email ""}))
-
 (def SCOPES "https://picasaweb.google.com/data/ openid email profile")
 ;(def SCOPES "openid email profile")
 
@@ -50,24 +48,20 @@
 ;https://developers.google.com/identity/protocols/OpenIDConnect#server-flow
 ;https://developers.google.com/identity/protocols/CrossClientAuth
 
-; Google Auth redirect
-; Prompt is
-;consent
-;select_account
-;none
+(def google-token-endpoint "https://www.googleapis.com/oauth2/v4/token")
 
 (defn gauth-redirect
-  [with-prompt]
+  [need-refresh]
   (str
     "https://accounts.google.com/o/oauth2/auth?"
-    "scope=" SCOPES "&"
+    "access_type=offline&"
+    "scope=" (ring.util.codec/url-encode SCOPES) "&"
     "redirect_uri=" (ring.util.codec/url-encode REDIRECT_URI) "&"
     "response_type=code&"
     "client_id=" (ring.util.codec/url-encode CLIENT_ID) "&"
-    (if
-      (not with-prompt)
-      "prompt=consent&")
-    "access_type=offline"))
+    (if need-refresh
+      "prompt=consent"
+      "prompt=none")))
 
 
 (defn save-session [req details]
@@ -77,40 +71,52 @@
       [:session :identity] key)))
 
 
+(defn google-get-token
+  [params]
+  (let [form-params (assoc
+                      params
+                      :client_id CLIENT_ID :client_secret CLIENT_SECRET :redirect_uri REDIRECT_URI)]
+    (parse/parse-string (:body
+                          (client/post google-token-endpoint {:form-params form-params})))))
 
+(defn google-user-details
+  [access-token]
+  (parse/parse-string (:body
+                        (client/get
+                          (str
+                              "https://www.googleapis.com/oauth2/v1/userinfo?access_token="
+                              access-token)))))
 
-(defn google-callback [req]
-  (let [params (:params (ring.middleware.params/params-request req))
-        access-token-response (client/post "https://accounts.google.com/o/oauth2/token"
-                                           {:form-params {:code (get params "code")
-                                                          :client_id CLIENT_ID
-                                                          :client_secret CLIENT_SECRET
-                                                          :redirect_uri REDIRECT_URI
-                                                          :grant_type "authorization_code"}})
-        user-details (parse/parse-string (:body (client/get (str "https://www.googleapis.com/oauth2/v1/userinfo?access_token="
-                                                                 (get (parse/parse-string (:body access-token-response)) "access_token")))) true)]
+(defn google-complete-flow
+   [code]
+   (let [access-token-response (google-get-token {:code code :grant_type "authorization_code"})
+         access-token (get access-token-response "access_token")
+         refresh-token (get access-token-response "refresh_token")
+         user-details (google-user-details access-token)]
     (log/info access-token-response)
+    (log/info access-token)
     (log/info user-details)
+    (log/info refresh-token)
     (assoc-in (redirect "/") [:session :identity] (:email user-details))))
 
-(def test-user
-  {:given_name "Felix", :email "felixb@gmail.com",
-   :locale "en-GB", :name "Felix Barbalet",
-   :family_name "Barbalet",
-   :link "https://plus.google.com/+FelixBarbalet",
-   :id "108070438918136791491",
-   :picture "https://lh5.googleusercontent.com/-aQqoVIBsTYQ/AAAAAAAAAAI/AAAAAAAAI1o/AnsRewIufl8/photo.jpg",
-   :verified_email true, :gender "male"})
+
+; If user doesn't consent, redirect to a message
+; If user does consent, complete the flow
+(defn google-callback [req]
+  (if-let [code (get (:params (ring.middleware.params/params-request req)) "code")]
+    (google-complete-flow code)
+    (redirect "/login-failed")))
 
 
 
-; Try the no-prompt flow, if that fails, then prompt...
+
 
 
 (defroutes auth-routes
- (GET "/oauth2callback" [] google-callback)
- (GET "/gauth" [] (redirect (gauth-redirect false)))
- (GET "/testauth" [test-user] save-session))
+ ;Simply login to the app
+ (GET "/login" [] (redirect (gauth-redirect false)))
+ (GET "/authorise" [] (redirect (gauth-redirect true)))
+ (GET "/oauth2callback" [] google-callback))
 
 (defn add-auth [app]
   (-> (compojure.core/routes auth-routes app)

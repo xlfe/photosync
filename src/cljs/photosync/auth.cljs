@@ -6,53 +6,68 @@
 (set! *warn-on-infer* true)
 
 (def SCOPE
-  ;"https://picasaweb.google.com/data/ profile email openid")
- "profile email openid")
+  "https://picasaweb.google.com/data/ profile email openid")
+ ;"profile email openid")
 
 (def client-params
   (js-obj "apiKey" "***REMOVED***"
     "client_id" "***REMOVED***.apps.googleusercontent.com"
-    ;"prompt" "none"
     ;      "ux_mode" "popup"
     "scope" SCOPE))
 
-
 (defn google-auth-instance []
- (.getAuthInstance js/gapi.auth2))
+ (js-invoke js/gapi.auth2 "getAuthInstance"))
 
 (defn google-current-user []
- (.get (goog.object/get (google-auth-instance) "currentUser")))
+ (js-invoke (goog.object/get (google-auth-instance) "currentUser") "get"))
 
-(defn sign-in []
- ;(.signIn (google-auth-instance)))
- (.then (.grantOfflineAccess (google-auth-instance) client-params)
-  (fn [token] (println (str "Offline token: " token)))))
+(defn sign-in [app]
+ (.then (js-invoke (google-auth-instance) "signIn")
+  (fn [token]
+    (println (str "Logged in token: " token)))
+  (fn [error]
+    (let [error (or (goog.object/get error "details") "Unknown error")]
+      (println (str "Login Error: " error))
+      (compassus/set-route! app :login {:params {:error-text error}})))))
 
+(defn get-user-details
+  [user]
+  (let [profile (js-invoke user "getBasicProfile")]
+       {:id (js-invoke profile "getId")
+         :name (js-invoke profile "getName")
+         :given_name (js-invoke profile "getGivenName")
+         :family_name (js-invoke profile "getFamilyName")
+         :image_url (js-invoke profile "getImageUrl")
+         :email (js-invoke profile "getEmail")}))
 
 
 (defn google-auth-state-changes [app]
   (fn []
-   (let [currentUser (google-current-user)
-         granted (js-invoke currentUser "hasGrantedScopes" SCOPE)
-         profile (.getBasicProfile currentUser)]
-    (println (str "Current user:" currentUser))
-    (println (str "Profile:" profile))
-    (if granted
-     (println (str "Granted scope:" granted))
-     (compassus/set-route! app :login)))))
-
-(defn google-auth-init-complete [])
-
+   (if-let [currentUser (google-current-user)]
+     (let [isSignedIn (js-invoke currentUser "isSignedIn")
+           granted (js-invoke currentUser "hasGrantedScopes" SCOPE)]
+      (println (str "Signed in:") isSignedIn)
+      (if (not isSignedIn)
+        (compassus/set-route! app :login {:params {:error-text "You might have a privacy extension blocking third party cookies"}}))
+      (if granted
+       (compassus/set-route! app :welcome {:params {:error-text nil :user (get-user-details currentUser)}})))
+     (println "Not signed in"))))
 
 (defn google-auth-init
   [app]
-  (.then (.init js/gapi.client client-params)
-   (fn []
-     (let [currentUser (goog.object/get (google-auth-instance) "currentUser")
-           state-changes (google-auth-state-changes app)]
-      (.listen currentUser state-changes)))
+  (.then (js-invoke js/gapi.auth2 "init" client-params)
+   (fn [GoogleAuth]
+     (let [currentUser (goog.object/get GoogleAuth "currentUser")
+           state-changes (google-auth-state-changes app)
+           signedIn (js-invoke (google-current-user) "isSignedIn")]
+      (js-invoke currentUser "listen" state-changes)
+      (println (str "SIGNED IN: " signedIn))
+      (if signedIn
+       (state-changes))))
    (fn [error]
-    (println error))))
+     (let [error (goog.object/get error "details")]
+       (println (str "Auth Init Error: " error))
+       (compassus/set-route! app :login {:params {:error-text error}})))))
 
 
 (defn google-auth-load

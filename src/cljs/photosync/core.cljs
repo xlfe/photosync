@@ -99,41 +99,50 @@
 
 
 (defui ^:once Login
+  static om/IQuery
+  (query [this]
+    '[:error-text])
   Object
   (render [this]
-   (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-    (ui/dialog
-      {
-       :actions
-       [
-          (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
-          (ui/flat-button {:label "Login" :primary true :onClick #(auth/sign-in)})]
-          ;(ui/flat-button {:label "Login" :primary true :onClick #(redirect! "/gauth")})]
+    (let [props (om/props this)
+          error-text (:error-text props)]
+     (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
+      (ui/dialog
+        {
+         :actions
+         [
+            (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
+            (if error-text
+             (ui/flat-button {:label "Try again" :primary true :onClick #(.reload js/location)})
+             (ui/flat-button {:label "Login" :primary true :onClick #(auth/sign-in this)}))]
+            ;(ui/flat-button {:label "Login" :primary true :onClick #(redirect! "/gauth")})]
 
-       :title "Please login using your Google Account"
-       :open true :modal true}
-      "If you haven't logged in before we will
-       ask for access to Google Photos as well"))))
+         :title (if error-text
+                  "Error logging you in"
+                  "Please login using your Google Account")
+         :open true :modal true}
+        (if error-text
+          error-text
+          "If you haven't logged in before we will ask for access to Google Photos as well"))))))
 
 
 (defui ^:once Welcome
+  static om/IQuery
+  (query [this]
+    '[:user])
   Object
   (render [this]
-    (let [props (merge (om/props this) {:todos/showing :all})
-          {:keys [todos/list]} props
-          active (count (remove :todo/completed list))
-          checked? (every? :todo/completed list)
-          completed (- (count list) active)]
-
+    (let [props (om/props this)
+          user (:user props)]
       (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
        (ui/dialog {
                    :actions [
                              (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
-                             (ui/flat-button {:label "Allow" :primary true :onClick #(redirect! "/login")})]
+                             (ui/flat-button {:label "Authorise" :primary true :onClick #(redirect! "/authorise")})]
 
-                   :title "Allow PhotoSync to access your Google Photos?"
+                   :title (str (:given_name user) ", welcome to PhotoSync!")
                    :open true :modal true}
-         "PhotoSync requires access to your Google Photos account in order to upload photos")))))
+         "PhotoSync requires offline access to your Google Photos account in order to upload photos")))))
 
 
 
@@ -155,7 +164,6 @@
 
 (defroute login "/login" []
           (compassus/set-route! app :login))
-
 
 (defroute welcome "/welcome" []
           (compassus/set-route! app :welcome))
