@@ -3,10 +3,11 @@
     [hyperion.api :as ds]
     [clojure.tools.logging :as log]
     [photosync.model :as model]
-    [photosync.util :as util])
-  (:refer-clojure :exclude [read])
-  (:import
-    [photosync.model User]))
+    [photosync.util :as util]
+    [photosync.model :refer [google-user]])
+  (:refer-clojure :exclude [read]))
+  ;(:import
+  ;  [photosync.model GoogleUser]))
 
 ;; =============================================================================
 ;; Reads
@@ -19,11 +20,10 @@
 
 (defn todos
   ([]
-   (into [] (map util/fake-datomic (ds/query User))))
-  ([selector]
-   (ds/query
-     User
-     :filter [:= :id selector])))
+   (into [] []))) ;(map util/fake-datomic []))))
+  ;([selector]
+  ; (
+  ;   :filter [:= :id selector])))
 
 (defmethod readf :todos/by-id
   [{:keys [query]} _ {:keys [id]}]
@@ -61,15 +61,15 @@
    :action
    (fn []
      (println completed)
-     (if-let [entity (ds/retrieve User id)]
+     (if-let [entity ()] ;(ds/retrieve User id)]
        (let [updated (merge entity
                         (when (not= nil completed)
                          {:completed completed})
                         (when (not= nil title)
                          {:title title}))]
         (println entity)
-        (println updated)
-        (ds/fake-datomic (ds/save! updated)))
+        (println updated))
+        ;(ds/fake-datomic (ds/save! updated)))
       (str "error")))})
 
 

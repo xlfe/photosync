@@ -24,7 +24,7 @@
                  [cheshire "5.8.0"]
                  [secretary "1.2.3"]
                  [compassus "1.0.0-alpha3"]
-                 [hyperion/hyperion-gae "3.7.1"]
+                 [hyperion/hyperion-gae "3.7.2-SNAPSHOT"]
 
                  [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
                  [com.google.api-client/google-api-client "1.23.0"]

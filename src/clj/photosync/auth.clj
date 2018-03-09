@@ -19,7 +19,8 @@
             [buddy.core.hash :as hash]
             [buddy.core.keys :as keys]
             [cheshire.core :as parse]
-            [hyperion.api :as ds]))
+            [hyperion.api :as ds]
+            [photosync.model :as models]))
 
   ;(:import [java.security Security]))
 
@@ -49,13 +50,34 @@
 ;https://developers.google.com/identity/protocols/OpenIDConnect#server-flow
 ;https://developers.google.com/identity/protocols/CrossClientAuth
 
-(def red (str "https://accounts.google.com/o/oauth2/auth?"
-              "scope=" SCOPES "&"
-              "redirect_uri=" (ring.util.codec/url-encode REDIRECT_URI) "&"
-              "response_type=code&"
-              "client_id=" (ring.util.codec/url-encode CLIENT_ID) "&"
-              ;"prompt=none&"
-              "access_type=offline"))
+; Google Auth redirect
+; Prompt is
+;consent
+;select_account
+;none
+
+(defn gauth-redirect
+  [with-prompt]
+  (str
+    "https://accounts.google.com/o/oauth2/auth?"
+    "scope=" SCOPES "&"
+    "redirect_uri=" (ring.util.codec/url-encode REDIRECT_URI) "&"
+    "response_type=code&"
+    "client_id=" (ring.util.codec/url-encode CLIENT_ID) "&"
+    (if
+      (not with-prompt)
+      "prompt=consent&")
+    "access_type=offline"))
+
+
+(defn save-session [req details]
+  (let [key (:key (ds/save (models/user-session details)))]
+    (assoc-in
+      (response (str (:identity (:session req))))
+      [:session :identity] key)))
+
+
+
 
 (defn google-callback [req]
   (let [params (:params (ring.middleware.params/params-request req))
@@ -82,24 +104,18 @@
 
 
 
-(defn set-user [req]
-  (println (ds/save {:kind :login} test-user))
-  (println (count (ds/find-by-kind :login)))
-  (println (ds/find-records-by-kind :login))
-  (assoc-in
-    (response (str (:identity (:session req))))
-    [:session :identity] test-user));{:_id 1, :username "jshiosdhifsodhiouho", :role :admin}))
+; Try the no-prompt flow, if that fails, then prompt...
 
 
 (defroutes auth-routes
  (GET "/oauth2callback" [] google-callback)
- (GET "/gauth" [] (redirect red))
- (GET "/testauth" [] set-user))
+ (GET "/gauth" [] (redirect (gauth-redirect false)))
+ (GET "/testauth" [test-user] save-session))
 
 (defn add-auth [app]
   (-> (compojure.core/routes auth-routes app)
    (wrap-session {
-                  :store (cookie-store "1234567887654321")
+                  :store (cookie-store "Biy}+y{JolJK%1/)F")
                   :cookie-name "S"
                   :cookie-attrs {:max-age 3600}})
 

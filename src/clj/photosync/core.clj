@@ -23,6 +23,12 @@
 
 
 (ds/set-ds! (hyperion.gae/new-gae-datastore))
+
+(defn test-db [req]
+  {:body (str
+           (ds/save (model/google-user) :email "test@test.com" :locale "AU")
+           (ds/save (model/user-session) :google-id "test@test.com"))})
+
 ;(defn unauthorized-handler
 ;  [request metadata]
 ;  (-> (response "Unauthorized APP request")
@@ -119,6 +125,7 @@
 (defroutes app
    (ANY "/api" [] api-resource)
    (GET  "/" [] (resource-response "index.html" {:root "public/html"}))
+   (GET "/test-db" [] test-db)
    (route/resources "/")
    (route/not-found (resource-response "404.html" {:root "public/html"})))
 
