@@ -125,20 +125,22 @@
 (defroutes app
    (ANY "/api" [] api-resource)
    (GET  "/" [] (resource-response "index.html" {:root "public/html"}))
-   (GET "/test-db" [] test-db)
    (route/resources "/")
    (route/not-found (resource-response "404.html" {:root "public/html"})))
 
 (def prod-handler
-  (-> app
-      wrap-hsts
-      wrap-params
-      auth/add-auth
+  (-> app               ; main app routes
+      wrap-hsts         ; HTTP Strict Transport Security
+      wrap-params       ; parse urlencoded parameters from the query string and form body
+      auth/add-auth     ; authentication endpoints
       parse-edn-body))
 
-(def reload-handler
-  (-> app
-      wrap-params
-      auth/add-auth
-      wrap-reload
-      parse-edn-body))
+
+
+(defroutes dev-routes
+  (GET "/test-db" [] test-db))
+
+
+(def dev-handler
+  (-> (compojure.core/routes dev-routes prod-handler)
+      wrap-reload)) ; add hot reload

@@ -40,7 +40,8 @@
 (def login-uri "https://accounts.google.com")
 (def CLIENT_ID "***REMOVED***.apps.googleusercontent.com")
 (def CLIENT_SECRET "***REMOVED***")
-(def REDIRECT_URI "http://localhost:8080/oauth2callback")
+;(def REDIRECT_URI "http://localhost:8080/oauth2callback")
+(def REDIRECT_URI "https://photosync.net/oauth2callback")
 (def SCOPES "https://picasaweb.google.com/data/ openid email profile")
 ;(def SCOPES "openid email profile")
 
