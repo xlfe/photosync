@@ -76,7 +76,6 @@
                request))))
 
 
-
 ;(defresource
 ;  classes
 ;  edn-api-defaults
@@ -105,8 +104,7 @@
 
 
 (defn check-user [req]
-  ;(println (str "CHECK USER " req))
-  (not (= nil (:user-info req))))
+  (not (= nil (get-in req [:request :session :identity]))))
 
 
 (defresource
@@ -132,7 +130,7 @@
   (-> app               ; main app routes
       wrap-hsts         ; HTTP Strict Transport Security
       wrap-params       ; parse urlencoded parameters from the query string and form body
-      auth/add-auth     ; authentication endpoints
+      auth/add-auth     ; authentication endpoints, adds :session to request based on cookies
       parse-edn-body))
 
 
@@ -142,5 +140,10 @@
 
 
 (def dev-handler
-  (-> (compojure.core/routes dev-routes prod-handler)
-      wrap-reload)) ; add hot reload
+  (->
+    (compojure.core/routes dev-routes app)
+    wrap-params
+    auth/debug-user-auth
+    auth/add-auth
+    wrap-reload ; add hot reload
+    parse-edn-body))

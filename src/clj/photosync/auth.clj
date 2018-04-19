@@ -129,3 +129,9 @@
    (wrap-authentication backend)))
 
 
+
+(defn debug-user-auth [handler]
+  (fn [request]
+    ;(handler (assoc-in request [:session] nil))))
+    (handler (assoc-in request [:session :identity] "test-user@gmail.com"))))
+
