@@ -5,7 +5,7 @@
     [ring.middleware.ssl :refer [wrap-hsts]]
     [clojure.walk :as walk]
     [ring.middleware.reload :refer [wrap-reload]]
-    [ring.util.response :refer [resource-response]]
+    [ring.util.response :refer [redirect resource-response]]
     [clojure.tools.logging :as log]
     [photosync.util :as util]
     [liberator.core :refer [resource defresource]]
@@ -23,11 +23,6 @@
 
 
 (ds/set-ds! (hyperion.gae/new-gae-datastore))
-
-(defn test-db [req]
-  {:body (str
-           (ds/save (model/google-user) :email "test@test.com" :locale "AU")
-           (ds/save (model/user-session) :google-id "test@test.com"))})
 
 ;(defn unauthorized-handler
 ;  [request metadata]
@@ -104,6 +99,11 @@
 
 
 (defn check-user [req]
+  (let [session-key (get-in req [:request :session :identity])
+        session (auth/get-session session-key)
+        google-details (ds/find-by-key (:googleuser-key session))]
+   (log/info (str "Current session: " session))
+   (log/info (str "Current user: " google-details)))
   (not (= nil (get-in req [:request :session :identity]))))
 
 
@@ -133,6 +133,11 @@
       auth/add-auth     ; authentication endpoints, adds :session to request based on cookies
       parse-edn-body))
 
+
+(defn test-db [req]
+  {:body (str
+           (ds/save (model/google-user) :email "test@test.com" :locale "AU")
+           (ds/save (model/user-session) :google-id "test@test.com"))})
 
 
 (defroutes dev-routes

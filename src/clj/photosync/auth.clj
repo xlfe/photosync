@@ -65,12 +65,6 @@
       "prompt=none")))
 
 
-(defn save-session [req details]
-  (let [key (:key (ds/save (models/user-session details)))]
-    (assoc-in
-      (response (str (:identity (:session req))))
-      [:session :identity] key)))
-
 
 (defn google-get-token
   [params]
@@ -88,17 +82,41 @@
                               "https://www.googleapis.com/oauth2/v1/userinfo?access_token="
                               access-token)))))
 
+(defn make-session [gid]
+  (:key (ds/save (models/user-session {:googleuser-key gid}))))
+
+
+(defn get-session [key]
+  (ds/find-by-key key))
+
+
+
+(defn save-or-get-google-user
+  "Get the :key for the google user record (or create it if it doesn't exist)"
+  [user-details]
+  (if-let [guk (:key (first (ds/find-by-kind :google-user :filters [:= :id (:id user-details)])))]
+   guk
+   (:key (ds/save (models/google-user user-details)))))
+
+
+
 (defn google-complete-flow
    [code]
    (let [access-token-response (google-get-token {:code code :grant_type "authorization_code"})
          access-token (get access-token-response "access_token")
-         refresh-token (get access-token-response "refresh_token")
-         user-details (google-user-details access-token)]
-    (log/info access-token-response)
-    (log/info access-token)
-    (log/info user-details)
-    (log/info refresh-token)
-    (assoc-in (redirect "/") [:session :identity] (:email user-details))))
+         user-details (google-user-details access-token)
+         googleuser-key (save-or-get-google-user user-details)
+         token-key (:key (ds/save (models/oauth-token {
+                                                        :owner googleuser-key
+                                                        :access-token access-token
+                                                        :source "google"
+                                                        :refresh-token (get access-token-response "refresh_token")
+                                                        :expires (get access-token-response "expires_in")})))
+         session-key (make-session googleuser-key)]
+
+
+
+    (assoc-in (redirect "/") [:session :identity] session-key)))
 
 
 ; If user doesn't consent, redirect to a message
@@ -132,6 +150,19 @@
 
 (defn debug-user-auth [handler]
   (fn [request]
-    ;(handler (assoc-in request [:session] nil))))
-    (handler (assoc-in request [:session :identity] "test-user@gmail.com"))))
+    (if (get-in request [:session :identity])
+     (handler request)
+     (do
+       (log/info (str "Debug user needs session!"))
+       (let [guk (save-or-get-google-user {
+                                           :given_name "Debug"
+                                           :email "felixb@gmail.com"
+                                           :locale "AU"
+                                           :name "Debug User"
+                                           :family_name "User"
+                                           :id 12345
+                                           :gender "male"
+                                           :verified_email true})]
+
+        (assoc-in (redirect (get-in request [:uri])) [:session :identity] (make-session guk)))))))
 

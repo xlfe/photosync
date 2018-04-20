@@ -6,10 +6,6 @@
 
 
 (h/defentity user-session
-     [google-id]
-     [session-id]
-     [expires]
-     [ip]
      [googleuser-key :type (ht/foreign-key :googleuser)]
      [created-at]) ; populated automaticaly
 
@@ -28,7 +24,7 @@
 
 
 
-(h/defentity OAuthToken
+(h/defentity oauth-token
             [__indexed :default [:owner]]
             [owner :type (ht/foreign-key :googleuser)]
             [access_token]
