@@ -94,23 +94,20 @@
 ;               {:classes {:url "/classes" :coll (map fake-datomic (ds/query Classes))}}))))
 
 (defn api [req]
-  (let [data ((om/parser {:read parser/readf :mutate parser/mutatef}) {} (get-in req [:request :edn-body]))]
+  (let [user (get-in req [:request :user-details])
+        data ((om/parser {:read parser/readf :mutate parser/mutatef}) {:user-details user} (get-in req [:request :edn-body]))]
     {::data data}))
 
 
-(defn check-user [req]
-  (let [session-key (get-in req [:request :session :identity])
-        session (auth/get-session session-key)
-        google-details (ds/find-by-key (:googleuser-key session))]
-   (log/info (str "Current session: " session))
-   (log/info (str "Current user: " google-details)))
-  (not (= nil (get-in req [:request :session :identity]))))
+(defn check-session [req]
+  (println (str "Check Session: " (get-in req [:request :user-details])))
+  (not (= nil (get-in req [:request :user-details]))))
 
 
 (defresource
   api-resource
   edn-api-loggedin
-  :authorized? check-user
+  :authorized? check-session
   :allowed-methods [:get :post]
   :post! api
   :new? false
@@ -132,7 +129,6 @@
       wrap-params       ; parse urlencoded parameters from the query string and form body
       (auth/add-auth {:secure true})     ; authentication endpoints, adds :session to request based on cookies
       parse-edn-body))
-
 
 (defn test-db [req]
   {:body (str

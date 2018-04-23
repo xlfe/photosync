@@ -109,7 +109,12 @@
 
 
 
-
+(defn add-user [handler]
+  (fn [req]
+    (let [session-key (get-in req [:session :identity])
+          session (get-session session-key)
+          google-details (ds/find-by-key (:googleuser-key session))]
+      (handler (assoc-in req [:user-details] google-details)))))
 
 
 (defroutes auth-routes
@@ -119,15 +124,13 @@
  (GET "/oauth2callback" [] google-callback))
 
 (defn add-auth [app extra]
-  (-> (compojure.core/routes auth-routes app)
+  (->
+   (compojure.core/routes auth-routes app)
+   add-user
    (wrap-session {
                   :store (cookie-store "s090DMJ90iosahiosuisdfaweSOMEoBiy}+y{JolJK%1/)F")
                   :cookie-name "S"
                   :cookie-attrs (merge {:max-age 3600 :http-only true} extra)})))
-
-   ;(wrap-authentication backend)))
-
-
 
 (defn debug-user-auth [handler]
   (fn [request]
@@ -137,7 +140,7 @@
        (log/info (str "Debug user needs session!"))
        (let [guk (save-or-get-google-user {
                                            :given_name "Debug"
-                                           :email "felixb@gmail.com"
+                                           :email "debug@localhost.com"
                                            :locale "AU"
                                            :name "Debug User"
                                            :family_name "User"
