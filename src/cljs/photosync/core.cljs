@@ -31,7 +31,7 @@
 
 (enable-console-print!)
 
-(defn main [todos {:keys [todos/list]}])
+;(defn not-main [todos {:keys [todos/list]}])
 
 (defn clear-button [todos completed]
   (when (pos? completed)
@@ -129,7 +129,7 @@
 (defui ^:once Welcome
   static om/IQuery
   (query [this]
-    '[:user])
+    [:user])
   Object
   (render [this]
     (let [props (om/props this)
@@ -196,8 +196,8 @@
 
 ;(om/add-root! reconciler Todos (js/document.getElementById "app"))
 
-(defn do-auth []
-  (compassus/mount! app (js/document.getElementById "app"))
-  (auth/google-auth-init app))
+;(defn do-auth []
+(compassus/mount! app (js/document.getElementById "app"))
+  ;(auth/google-auth-init app))
 
-(auth/google-auth-load do-auth)
+;(auth/google-auth-load do-auth)

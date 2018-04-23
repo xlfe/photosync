@@ -14,20 +14,30 @@
 
             [cheshire.core :as parse]
             [hyperion.api :as ds]
+            [java-time.temporal :refer [instant]]
+            [java-time.core :refer [plus]]
+            [java-time.pre-java8 :refer [java-date]]
+            [java-time.amount :refer [seconds]]
             [photosync.model :as models])
-  (:import com.google.appengine.api.utils.SystemProperty))
+  (:import (com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value)))
 
 
 (def login-uri "https://accounts.google.com")
 (def CLIENT_ID "***REMOVED***.apps.googleusercontent.com")
 (def CLIENT_SECRET "***REMOVED***")
+
 (def REDIRECT_URI
-  (if
-    (= (. SystemProperty environment) SystemProperty Environment)
-    "http://localhost:8080/oauth2callback"
-    "https://photosync.net/oauth2callback"))
+  (let [env (.value SystemProperty/environment)
+        uri (if (= env (SystemProperty$Environment$Value/Production))
+             "https://photosync.net/oauth2callback"
+             "http://localhost:8080/oauth2callback")]
+    ;(log/info env)
+    ;(log/info (SystemProperty$Environment$Value/Production))
+    ;(log/info uri)
+    uri))
+
+
 (def SCOPES "https://picasaweb.google.com/data/ openid email profile")
-;(def SCOPES "openid email profile")
 
 ;https://developers.google.com/picasa-web/docs/3.0/developers_guide_protocol
 ;https://developers.google.com/identity/protocols/OpenIDConnect#server-flow
@@ -95,15 +105,15 @@
          googleuser-key (save-or-get-google-user user-details)
          token-key (:key (ds/save (models/oauth-token {
                                                         :owner googleuser-key
-                                                        :access-token access-token
+                                                        :access_token access-token
                                                         :source "google"
-                                                        :refresh-token refresh-token
-                                                        :expires expires})))
+                                                        :refresh_token refresh-token
+                                                        :expires (java-date (plus (instant) (seconds expires)))})))
          session-key (make-session googleuser-key)]
 
 
-    (log/info (str "access-token" access-token))
-    (log/info (str "refresh-token " refresh-token))
+    (log/info (str "access-token: " access-token))
+    (log/info (str "refresh-token: " refresh-token))
     (log/info (str "expires " expires))
     (log/info (str "user-details " user-details))
     (log/info (str "google-user-key " googleuser-key))

@@ -16,6 +16,7 @@
 
                  [ring "1.6.3"]
                  [ring/ring-ssl "0.3.0"]
+                 [clojure.java-time "0.3.2"]
 
                  [clj-http "3.7.0"]
 
