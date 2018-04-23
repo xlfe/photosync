@@ -100,7 +100,7 @@
 
 
 (defn check-session [req]
-  (println (str "Check Session: " (get-in req [:request :user-details])))
+  ;(println (str "Check Session: " (get-in req [:request :user-details])))
   (not (= nil (get-in req [:request :user-details]))))
 
 

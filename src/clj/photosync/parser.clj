@@ -26,11 +26,9 @@
   ;   :filter [:= :id selector])))
 
 (defmethod readf :user
- [env key params]
- (println (str "ENV: " env))
- (println (str "KEY: " key))
- (println (str "PARAMS:" params))
- {:value "test"})
+ [{:keys [user-details]} key params]
+ (println user-details)
+ {:value (select-keys user-details [:given_name :family_name :locale :name :link :picture :gender])})
 
 
 (defmethod readf :todos/by-id

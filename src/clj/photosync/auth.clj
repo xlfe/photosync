@@ -14,15 +14,18 @@
 
             [cheshire.core :as parse]
             [hyperion.api :as ds]
-            [photosync.model :as models]))
-
+            [photosync.model :as models])
+  (:import com.google.appengine.api.utils.SystemProperty))
 
 
 (def login-uri "https://accounts.google.com")
 (def CLIENT_ID "***REMOVED***.apps.googleusercontent.com")
 (def CLIENT_SECRET "***REMOVED***")
-;(def REDIRECT_URI "http://localhost:8080/oauth2callback")
-(def REDIRECT_URI "https://photosync.net/oauth2callback")
+(def REDIRECT_URI
+  (if
+    (= (. SystemProperty environment) SystemProperty Environment)
+    "http://localhost:8080/oauth2callback"
+    "https://photosync.net/oauth2callback"))
 (def SCOPES "https://picasaweb.google.com/data/ openid email profile")
 ;(def SCOPES "openid email profile")
 
@@ -61,7 +64,8 @@
                         (client/get
                           (str
                               "https://www.googleapis.com/oauth2/v1/userinfo?access_token="
-                              access-token)))))
+                              access-token)))
+                      true)) ;;get keywords back...
 
 (defn make-session [gid]
   (:key (ds/save (models/user-session {:googleuser-key gid}))))
@@ -75,9 +79,9 @@
 (defn save-or-get-google-user
   "Get the :key for the google user record (or create it if it doesn't exist)"
   [user-details]
-  (if-let [guk (:key (first (ds/find-by-kind :google-user :filters [:= :id (:id user-details)])))]
-   guk
-   (:key (ds/save (models/google-user user-details)))))
+  (if-let [user-record (first (ds/find-by-kind :google-user :filters [:= :id (:id user-details)]))]
+   (:key (ds/save (merge user-record user-details))) ;update
+   (:key (ds/save (models/google-user user-details))))) ;create
 
 
 
@@ -85,18 +89,25 @@
    [code]
    (let [access-token-response (google-get-token {:code code :grant_type "authorization_code"})
          access-token (get access-token-response "access_token")
+         refresh-token (get access-token-response "refresh_token")
+         expires (get access-token-response "expires_in")
          user-details (google-user-details access-token)
          googleuser-key (save-or-get-google-user user-details)
          token-key (:key (ds/save (models/oauth-token {
                                                         :owner googleuser-key
                                                         :access-token access-token
                                                         :source "google"
-                                                        :refresh-token (get access-token-response "refresh_token")
-                                                        :expires (get access-token-response "expires_in")})))
+                                                        :refresh-token refresh-token
+                                                        :expires expires})))
          session-key (make-session googleuser-key)]
 
 
-
+    (log/info (str "access-token" access-token))
+    (log/info (str "refresh-token " refresh-token))
+    (log/info (str "expires " expires))
+    (log/info (str "user-details " user-details))
+    (log/info (str "google-user-key " googleuser-key))
+    (log/info (str "token-key " token-key))
     (assoc-in (redirect "/") [:session :identity] session-key)))
 
 
