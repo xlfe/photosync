@@ -19,8 +19,6 @@
 
                  [clj-http "3.7.0"]
 
-                 [buddy/buddy-auth "2.1.0"]
-                 [buddy/buddy-sign "2.2.0"]
                  [cheshire "5.8.0"]
                  [secretary "1.2.3"]
                  [compassus "1.0.0-alpha3"]

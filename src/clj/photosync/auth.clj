@@ -10,30 +10,11 @@
             [ring.middleware.session :refer [wrap-session]]
             [ring.middleware.session.cookie :refer [cookie-store]]
             [ring.util.response :as response]
-
             [clojure.java.io :as io]
 
-            [buddy.auth.backends :as backends]
-            [buddy.auth.middleware :refer (wrap-authentication)]
-            [buddy.sign.jwe :as jwe]
-            [buddy.core.hash :as hash]
-            [buddy.core.keys :as keys]
             [cheshire.core :as parse]
             [hyperion.api :as ds]
             [photosync.model :as models]))
-
-  ;(:import [java.security Security]))
-
-
-; Required to be able to use AES256
-;(Security/setProperty "crypto.policy" "unlimited")
-;(def pubkey (keys/public-key (-> "keys/pubkey.pem" io/resource io/file)))
-;(def privkey (keys/private-key (-> "keys/privkey.pem" io/resource io/file) pem-secret))
-
-
-(def jwe-secret (hash/sha256 "p51l4Gh5r6UB81ugvzjjTIhpA0NGKfFqPJAxx&Gj(:X\\M}iR3?3bAB!a^"))
-(def backend (backends/jwe {:secret jwe-secret}))
-
 
 
 
@@ -137,14 +118,14 @@
  (GET "/authorise" [] (redirect (gauth-redirect true)))
  (GET "/oauth2callback" [] google-callback))
 
-(defn add-auth [app]
+(defn add-auth [app extra]
   (-> (compojure.core/routes auth-routes app)
    (wrap-session {
-                  :store (cookie-store "Biy}+y{JolJK%1/)F")
+                  :store (cookie-store "s090DMJ90iosahiosuisdfaweSOMEoBiy}+y{JolJK%1/)F")
                   :cookie-name "S"
-                  :cookie-attrs {:max-age 3600}})
+                  :cookie-attrs (merge {:max-age 3600 :http-only true} extra)})))
 
-   (wrap-authentication backend)))
+   ;(wrap-authentication backend)))
 
 
 

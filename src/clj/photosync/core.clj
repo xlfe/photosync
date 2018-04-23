@@ -130,7 +130,7 @@
   (-> app               ; main app routes
       wrap-hsts         ; HTTP Strict Transport Security
       wrap-params       ; parse urlencoded parameters from the query string and form body
-      auth/add-auth     ; authentication endpoints, adds :session to request based on cookies
+      (auth/add-auth {:secure true})     ; authentication endpoints, adds :session to request based on cookies
       parse-edn-body))
 
 
@@ -149,6 +149,6 @@
     (compojure.core/routes dev-routes app)
     wrap-params
     auth/debug-user-auth
-    auth/add-auth
+    (auth/add-auth {:secure false})     ; authentication endpoints, adds :session to request based on cookies
     wrap-reload ; add hot reload
     parse-edn-body))
