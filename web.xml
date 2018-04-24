@@ -5,6 +5,7 @@
   <servlet>
     <servlet-name>photosync.core/prod-handler servlet</servlet-name>
     <servlet-class>photosync.servlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
   </servlet>
   <servlet-mapping>
     <servlet-name>photosync.core/prod-handler servlet</servlet-name>

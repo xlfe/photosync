@@ -91,22 +91,14 @@
   "Get the :key for the google user record (or create it if it doesn't exist)"
   [user-details]
   (if-let [user-record (first (ds/find-by-kind :google-user :filters [:= :id (:id user-details)]))]
-   (:key (ds/save (models/google-user) (util/safe-merge user-record user-details))) ;update
-   (:key (ds/save (models/google-user) user-details)))) ;create
+    (:key (ds/save (util/safe-merge user-record user-details)))
+    (:key (ds/save {:kind :google-user} user-details))))
 
 (defn save-or-update-oauth
   [details]
-  (log/info (str "OAuth Token Count for " (:owner details) " - " (:source details) ":= "
-                 (first (ds/find-by-kind :oauth-token :filters
-                                          [
-                                           [:= :owner (:owner details)]
-                                           [:= :source (:source details)]]))))
-  (if-let [record (first (ds/find-by-kind :oauth-token :filters
-                                               [
-                                                [:= :owner (:owner details)]
-                                                [:= :source (:source details)]]))]
-    (:key (ds/save (models/oauth-token) (util/safe-merge record details))) ;update
-    (:key (ds/save (models/oauth-token) details)))) ;create
+  (if-let [record (first (ds/find-by-kind :oauth-token :filters [[:= :owner (:owner details)][:= :source (:source details)]]))]
+    (:key (ds/save (util/safe-merge record details)))
+    (:key (ds/save {:kind :oauth-token} details))))
 
 (defn google-complete-flow
    [code]
