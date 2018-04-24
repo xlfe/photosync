@@ -1,4 +1,4 @@
-(def appengine-version "1.9.60")
+(def appengine-version "1.9.63")
 
 (defproject photosync "0.0.1-SNAPSHOT"
 
@@ -8,6 +8,7 @@
                  [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/core.async "0.3.443"]
                  [org.clojure/tools.logging "0.4.0"]
+                 [org.clojure/core.match "0.3.0-alpha5"]
                  [org.omcljs/om "1.0.0-beta2-SNAPSHOT" :exclusions [cljsjs/react cljsjs/react-dom]]
                  [cljs-react-material-ui "0.2.50"]
                  [cljsjs/react "16.2.0-3"]
@@ -75,8 +76,6 @@
                                     :source-paths ["src/cljs"]
                                     ;:figwheel     false
                                     :compiler     {:output-to     "resources/public/js/main.js"
-                                                   :output-dir    "resources/public/js/"
-                                                   :asset-path    "js"
                                                    :infer-externs true
                                                    :optimizations :advanced}}}})
 
