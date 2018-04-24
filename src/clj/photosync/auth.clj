@@ -18,7 +18,8 @@
             [java-time.core :refer [plus]]
             [java-time.pre-java8 :refer [java-date]]
             [java-time.amount :refer [seconds]]
-            [photosync.model :as models])
+            [photosync.model :as models]
+            [photosync.util :as util])
   (:import (com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value)))
 
 
@@ -90,10 +91,22 @@
   "Get the :key for the google user record (or create it if it doesn't exist)"
   [user-details]
   (if-let [user-record (first (ds/find-by-kind :google-user :filters [:= :id (:id user-details)]))]
-   (:key (ds/save (merge user-record user-details))) ;update
-   (:key (ds/save (models/google-user user-details))))) ;create
+   (:key (ds/save (models/google-user) (util/safe-merge user-record user-details))) ;update
+   (:key (ds/save (models/google-user) user-details)))) ;create
 
-
+(defn save-or-update-oauth
+  [details]
+  (log/info (str "OAuth Token Count for " (:owner details) " - " (:source details) ":= "
+                 (first (ds/find-by-kind :oauth-token :filters
+                                          [
+                                           [:= :owner (:owner details)]
+                                           [:= :source (:source details)]]))))
+  (if-let [record (first (ds/find-by-kind :oauth-token :filters
+                                               [
+                                                [:= :owner (:owner details)]
+                                                [:= :source (:source details)]]))]
+    (:key (ds/save (models/oauth-token) (util/safe-merge record details))) ;update
+    (:key (ds/save (models/oauth-token) details)))) ;create
 
 (defn google-complete-flow
    [code]
@@ -103,21 +116,20 @@
          expires (get access-token-response "expires_in")
          user-details (google-user-details access-token)
          googleuser-key (save-or-get-google-user user-details)
-         token-key (:key (ds/save (models/oauth-token {
-                                                        :owner googleuser-key
-                                                        :access_token access-token
-                                                        :source "google"
-                                                        :refresh_token refresh-token
-                                                        :expires (java-date (plus (instant) (seconds expires)))})))
+         token-key (save-or-update-oauth  {:owner googleuser-key
+                                           :access_token access-token
+                                           :source "google"
+                                           :refresh_token refresh-token
+                                           :expires (java-date (plus (instant) (seconds expires)))})
          session-key (make-session googleuser-key)]
 
 
-    (log/info (str "access-token: " access-token))
-    (log/info (str "refresh-token: " refresh-token))
-    (log/info (str "expires " expires))
-    (log/info (str "user-details " user-details))
-    (log/info (str "google-user-key " googleuser-key))
-    (log/info (str "token-key " token-key))
+    ;(log/info (str "access-token: " access-token))
+    ;(log/info (str "refresh-token: " refresh-token))
+    ;(log/info (str "expires " expires))
+    ;(log/info (str "user-details " user-details))
+    ;(log/info (str "google-user-key " googleuser-key))
+    ;(log/info (str "token-key " token-key))
     (assoc-in (redirect "/") [:session :identity] session-key)))
 
 

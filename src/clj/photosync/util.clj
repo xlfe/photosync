@@ -1,8 +1,16 @@
 (ns photosync.util
   (:require
-    [camel-snake-kebab.core :as csk])
+    [camel-snake-kebab.core :as csk]
+    [clojure.core.match :refer [match]])
   (:import
     [java.security NoSuchAlgorithmException MessageDigest]))
+
+(defn discard-nils [a b]
+  (match [a b]
+         [_ nil] a
+         :else b))
+
+(def safe-merge (partial merge-with discard-nils))
 
 (def ->kebab-case (memoize csk/->kebab-case))
 

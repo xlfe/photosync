@@ -24,25 +24,6 @@
 
 (ds/set-ds! (hyperion.gae/new-gae-datastore))
 
-;(defn unauthorized-handler
-;  [request metadata]
-;  (-> (response "Unauthorized APP request")
-;      (assoc :status 403))
-;
-
-;(defn generate-auth-token
-;  [request]
-;  (let [data (:form-params request)
-;        user (find-user (:username data)   ;; (implementation ommited)
-;                        (:password data)})
-;        token (jwt/sign {:user (:id user)} secret)
-;    {:status 200
-;     :body (json/encode {:token token})
-;     :headers {:content-type "application/json"})
-
-
-
-;
 ;
 ; Other stuff
 ;
@@ -70,28 +51,6 @@
                  :edn-body (read-inputstream-edn body))
                request))))
 
-
-;(defresource
-;  classes
-;  edn-api-defaults
-;  :allowed-methods [:get :post]
-;  :post! (fn [ctx]
-;           (dosync
-;             (let [data (get-in ctx [:request :edn-body])]
-;               (println data)
-;               {::id 1})))
-;  :post-redirect? (fn [ctx] {:location (format "/postbox/%s" (::id ctx))})
-;  :handle-ok (pr-str (ds/query Classes)))
-
-
-
-
-;(defresource
-;  init
-;  edn-api-defaults
-;  :allowed-methods [:get]
-;  :handle-ok (pr-str
-;               {:classes {:url "/classes" :coll (map fake-datomic (ds/query Classes))}}))))
 
 (defn api [req]
   (let [user (get-in req [:request :user-details])

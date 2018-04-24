@@ -1,6 +1,7 @@
 (ns photosync.model
   (:require
     [hyperion.api :as h]
+    [clojure.tools.logging :as log]
     [hyperion.types :as ht]))
 
 
@@ -25,7 +26,7 @@
 
 
 (h/defentity oauth-token
-            [__indexed :default [:owner]]
+            [__indexed :default [:owner :source]]
             [owner :type (ht/foreign-key :googleuser)]
             [access_token]
             [refresh_token]
