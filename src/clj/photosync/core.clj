@@ -29,15 +29,6 @@
 ;
 
 
-(def edn-api-defaults
-  {
-   :available-media-types ["application/edn"]})
-
-(def edn-api-loggedin
-  (merge edn-api-defaults
-         {:authorized? true}))
-         ;{:authorized? authenticated?}))
-
 (defn read-inputstream-edn [input]
   (edn/read
     {:eof nil}
@@ -51,21 +42,17 @@
                  :edn-body (read-inputstream-edn body))
                request))))
 
-
 (defn api [req]
   (let [user (get-in req [:request :user-details])
         data ((om/parser {:read parser/readf :mutate parser/mutatef}) {:user-details user} (get-in req [:request :edn-body]))]
     {::data data}))
 
-
 (defn check-session [req]
-  ;(println (str "Check Session: " (get-in req [:request :user-details])))
   (not (= nil (get-in req [:request :user-details]))))
-
 
 (defresource
   api-resource
-  edn-api-loggedin
+  :available-media-types ["application/edn"]
   :authorized? check-session
   :allowed-methods [:get :post]
   :post! api
@@ -75,35 +62,26 @@
                  (prn-str (::data ctx))))
                  ;(prn-str (merge {:compassus.core/route :index} (::data ctx)))))
 
+(def resource-root {:root "public"})
 
-(defroutes app
+(defroutes app-routes
    (ANY "/api" [] api-resource)
-   (GET  "/" [] (resource-response "index.html" {:root "public/html"}))
-   (route/resources "/")
-   (route/not-found (resource-response "404.html" {:root "public/html"})))
+   (GET  "/" [] (resource-response "html/index.html" resource-root))
+   (route/resources "/" resource-root))
+
+(defroutes error-routes
+   (route/not-found (resource-response "html/404.html" resource-root)))
 
 (def prod-handler
-  (-> app               ; main app routes
+  (-> app-routes ; main app routes
       wrap-hsts         ; HTTP Strict Transport Security
       wrap-params       ; parse urlencoded parameters from the query string and form body
-      (auth/add-auth {:secure true})     ; authentication endpoints, adds :session to request based on cookies
-      parse-edn-body))
-
-(defn test-db [req]
-  {:body (str
-           (ds/save (model/google-user) :email "test@test.com" :locale "AU")
-           (ds/save (model/user-session) :google-id "test@test.com"))})
-
-
-(defroutes dev-routes
-  (GET "/test-db" [] test-db))
-
+      parse-edn-body
+      (auth/add-auth error-routes {:secure true})))     ; authentication using cookies and google user details
 
 (def dev-handler
-  (->
-    (compojure.core/routes dev-routes app)
-    wrap-params
-    auth/debug-user-auth
-    (auth/add-auth {:secure false})     ; authentication endpoints, adds :session to request based on cookies
-    wrap-reload ; add hot reload
-    parse-edn-body))
+  (-> app-routes
+      wrap-params
+      parse-edn-body
+      (auth/add-auth error-routes {:secure false})     ; authentication using cookies and google user details
+      wrap-reload)) ; add hot reload

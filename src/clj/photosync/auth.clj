@@ -134,44 +134,30 @@
 
 
 
-(defn add-user [handler]
-  (fn [req]
-    (let [session-key (get-in req [:session :identity])
-          session (get-session session-key)
-          google-details (ds/find-by-key (:googleuser-key session))]
-      (handler (assoc-in req [:user-details] google-details)))))
-
-
 (defroutes auth-routes
- ;Simply login to the app
  (GET "/login" [] (redirect (gauth-redirect false)))
  (GET "/authorise" [] (redirect (gauth-redirect true)))
  (GET "/oauth2callback" [] google-callback))
 
-(defn add-auth [app extra]
+(defn auth-user [handler]
+  "Add :user-details based on the :session :identity and call the handler,
+  or if the user details can't be found, redirect to /login. Don't apply the test to any of the auth-routes"
+  (fn [req]
+    (if (some #{(:uri req)} ["/login" "/authorise" "/oauth2callback"])
+     (handler req)
+     (let [session-key (get-in req [:session :identity])
+           session (get-session session-key)
+           google-details (ds/find-by-key (:googleuser-key session))]
+      (if google-details
+       (handler (assoc-in req [:user-details] google-details))
+       (redirect "/login"))))))
+
+(defn add-auth [app-routes error-routes extra]
   (->
-   (compojure.core/routes auth-routes app)
-   add-user
+   (compojure.core/routes app-routes auth-routes error-routes)
+   auth-user
    (wrap-session {
                   :store (cookie-store "s090DMJ90iosahiosuisdfaweSOMEoBiy}+y{JolJK%1/)F")
                   :cookie-name "S"
                   :cookie-attrs (merge {:max-age 3600 :http-only true} extra)})))
-
-(defn debug-user-auth [handler]
-  (fn [request]
-    (if (get-in request [:session :identity])
-     (handler request)
-     (do
-       (log/info (str "Debug user needs session!"))
-       (let [guk (save-or-get-google-user {
-                                           :given_name "Debug"
-                                           :email "debug@localhost.com"
-                                           :locale "AU"
-                                           :name "Debug User"
-                                           :family_name "User"
-                                           :id 12345
-                                           :gender "male"
-                                           :verified_email true})]
-
-        (assoc-in (redirect (get-in request [:uri])) [:session :identity] (make-session guk)))))))
 
