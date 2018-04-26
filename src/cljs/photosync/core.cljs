@@ -14,8 +14,7 @@
             [goog.events :as evt]
 
             [photosync.util :as util :refer [hidden pluralize]]
-            [photosync.item :as item]
-            [photosync.auth :as auth]
+            [photosync.jobs :as jobs]
             [photosync.parser :as p])
   (:import [goog History]
            [goog.history EventType]))
@@ -31,27 +30,6 @@
 
 (enable-console-print!)
 
-;(defn not-main [todos {:keys [todos/list]}])
-
-(defn clear-button [todos completed]
-  (when (pos? completed)
-    (dom/button
-      #js {:id "clear-completed"
-           :onClick (fn [_] (om/transact! todos `[(todos/clear)]))}
-      (str "Clear completed (" completed ")"))))
-
-(defn footer
-  [todos props active completed]
-  (dom/div #js {:className "bottom row"}
-   (dom/div #js {:className "col-lg-12"}
-    (ui/paper {:zdepth 1}
-      (ui/bottom-navigation nil
-       (ui/bottom-navigation-item {
-                                   :icon (ic/content-select-all) :label "All"
-                                   :onClick  (fn [_] (om/transact! todos `[(todos/clear)]))})
-
-       (ui/bottom-navigation-item {:icon (ic/action-update) :label "Active"})
-       (ui/bottom-navigation-item {:icon (ic/action-done-all) :label "Completed"}))))))
 
 (defui ^:once Base
   Object
@@ -59,95 +37,50 @@
     (let [{:keys [owner factory props]} (om/get-computed this)
           route (compassus/current-route this)]
       (ui/mui-theme-provider {:mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})}
-       (dom/div []
-        (ui/app-bar {:title "PhotoSync .Net"})
-        (factory props))))))
+        (factory props)))))
 
 
-(defui ^:once Todos
-  static om/IQueryParams
-  (params [this]
-    {:todo-item (om/get-query item/TodoItem)})
-
+(defui ^:once Jobs
   static om/IQuery
   (query [this]
-    '[{:todos/list ?todo-item}])
-
+    '[:user :jobs/list ?job])
+  static om/IQueryParams
+  (params [this]
+    {:job (om/get-query jobs/JobItem)})
   Object
   (render [this]
-    (let [props (merge (om/props this) {:todos/showing :all})
-          {:keys [todos/list]} props
-          active (count (remove :todo/completed list))
-          checked? (every? :todo/completed list)
-          completed (- (count list) active)]
+    (let [props (om/props this)
+          {:keys [jobs/list user]} props]
+      (dom/div []
+               (ui/app-bar {:title (str (:given_name user) "'s Sync Jobs")})
+               (ui/floating-action-button
+                 {
+                  :style    #js {
+                                 :margin   "10px"
+                                 :position "absolute"
+                                 :bottom   "10px"
+                                 :right    "10px"}
+                  :on-click #("blah")}
+                 (ic/content-add))))))
 
-     (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-      (ui/paper
-       (ui/list
-        (ui/subheader "New todo -")
-        (ui/list-item {
-                              :primaryText (ui/text-field
-                                                  {:ref "newField"
-                                                   :id "new-todo"
-                                                   :placeholder "What needs to be done?"
-                                                   :onKeyDown (fn [e] (item/key-down this props e))})})
-        (ui/divider {:inset true})
-        (ui/subheader "Existing todos")
-        (map item/item list))
-       (ui/divider {:inset true})
-       (footer this props active completed))))))
+
 
 
 (defui ^:once Login
-  static om/IQuery
-  (query [this]
-    '[:error-text])
   Object
   (render [this]
-    (let [props (om/props this)
-          error-text (:error-text props)]
-     (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-      (ui/dialog
-        {
-         :actions
-         [
-            (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
-            (if error-text
-             (ui/flat-button {:label "Try again" :primary true :onClick #(.reload js/location)})
-             (ui/flat-button {:label "Login" :primary true :onClick #(auth/sign-in this)}))]
-            ;(ui/flat-button {:label "Login" :primary true :onClick #(redirect! "/gauth")})]
-
-         :title (if error-text
-                  "Error logging you in"
-                  "Please login using your Google Account")
-         :open true :modal true}
-        (if error-text
-          error-text
-          "If you haven't logged in before we will ask for access to Google Photos as well"))))))
-
-
-(defui ^:once Welcome
-  static om/IQuery
-  (query [this]
-    [:user])
-  Object
-  (render [this]
-    (let [props (om/props this)
-          user (:user props)]
-      (dom/div #js {:className "col-lg-offset-3 col-lg-6"}
-       (ui/dialog {
-                   :actions [
-                             (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
-                             (ui/flat-button {:label "Authorise" :primary true :onClick #(redirect! "/authorise")})]
-
-                   :title (str (:given_name user) ", welcome to PhotoSync!")
-                   :open true :modal true}
-         "PhotoSync requires offline access to your Google Photos account in order to upload photos")))))
+    (ui/dialog
+      {
+       :actions
+              [
+               (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
+               (ui/flat-button {:label "Login" :primary true :onClick #(redirect! "/login")})]
+       :open  true :modal true
+       :title "Please login to PhotoSync.Net using your Google Account"}
+      "PhotoSync.Net uses your Google Account to identify you")))
 
 
 
-
-;(def todos (om/factory Todos))
 
 (defonce reconciler
   (om/reconciler
@@ -159,28 +92,22 @@
 
 (declare app)
 
-(defroute index "/" []
+(defroute welcome "/" []
           (compassus/set-route! app :index))
 
 (defroute login "/login" []
           (compassus/set-route! app :login))
-
-(defroute welcome "/welcome" []
-          (compassus/set-route! app :welcome))
-
 
 (def event-key (atom nil))
 (def history
   (History.))
 
 
-
 (def app
   (compassus/application
     {:routes  {
-               :index Todos
                :login Login
-               :welcome Welcome}
+               :index Jobs}
 
      :index-route :index
      :reconciler reconciler
@@ -194,10 +121,4 @@
               (compassus/will-unmount (fn [_]
                                         (evt/unlistenByKey @event-key)))]}))
 
-;(om/add-root! reconciler Todos (js/document.getElementById "app"))
-
-;(defn do-auth []
 (compassus/mount! app (js/document.getElementById "app"))
-  ;(auth/google-auth-init app))
-
-;(auth/google-auth-load do-auth)
