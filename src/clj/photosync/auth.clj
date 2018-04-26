@@ -135,8 +135,8 @@
 
 
 (defroutes auth-routes
- (GET "/login" [] (redirect (gauth-redirect false)))
- (GET "/authorise" [] (redirect (gauth-redirect true)))
+ (GET "/login" [] (redirect (gauth-redirect false) :temporary-redirect))
+ (GET "/authorise" [] (redirect (gauth-redirect true) :temporary-redirect))
  (GET "/oauth2callback" [] google-callback))
 
 (defn auth-user [handler]
@@ -150,7 +150,7 @@
            google-details (ds/find-by-key (:googleuser-key session))]
       (if google-details
        (handler (assoc-in req [:user-details] google-details))
-       (redirect "/login"))))))
+       (redirect "/login" :temporary-redirect))))))
 
 (defn add-auth [app-routes error-routes extra]
   (->

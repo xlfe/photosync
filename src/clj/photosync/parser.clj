@@ -27,7 +27,6 @@
 
 (defmethod readf :user
  [{:keys [user-details]} key params]
- (println user-details)
  {:value (select-keys user-details [:given_name :family_name :locale :name :link :picture :gender])})
 
 
