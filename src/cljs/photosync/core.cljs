@@ -51,7 +51,7 @@
   (render [this]
     (let [props (om/props this)
           {:keys [jobs/list user]} props]
-      (dom/div []
+      (dom/div #js {:className ""}
                (ui/app-bar {:title (str (:given_name user) "'s Sync Jobs")})
                (ui/floating-action-button
                  {
