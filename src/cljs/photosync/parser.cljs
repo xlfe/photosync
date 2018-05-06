@@ -67,11 +67,18 @@
      (swap! state update-in ref merge new-props))})
 
 
-(defmethod mutate 'todo/edit
+(defmethod mutate 'close-app-bar
   [{:keys [state]} _ {:keys [db/id]}]
   {:action
    (fn []
-     (swap! state assoc :todos/editing [:todos/by-id id]))})
+     (swap! state dissoc :drawer))})
+
+
+(defmethod mutate 'open-app-bar
+  [{:keys [state]} _ {:keys [db/id]}]
+  {:action
+   (fn []
+     (swap! state assoc :drawer true))})
 
 (defmethod mutate 'todo/cancel-edit
   [{:keys [state]} _ _]

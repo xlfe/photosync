@@ -30,20 +30,43 @@
 
 (enable-console-print!)
 
+(defn appbar [this title]
+  (ui/app-bar {
+               :title title
+               :iconElementLeft (ui/icon-button {
+                                                 :className "menubutton"
+                                                 :onClick (fn [e] (om/transact! this '[(open-app-bar)]))}
+                                 (ic/navigation-menu))}))
+
 
 (defui ^:once Base
+  static om/IQuery
+  (query [this]
+    '[:drawer :user])
   Object
   (render [this]
     (let [{:keys [owner factory props]} (om/get-computed this)
-          route (compassus/current-route this)]
-      (ui/mui-theme-provider {:mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})}
-        (factory props)))))
+          {:keys [drawer user]} (om/props this)]
+      (ui/mui-theme-provider {
+                              :mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})
+                              :children [
+                                         (factory props)
+                                         (appbar this (str (:given_name user) "'s Sync Jobs"))
+                                         (ui/drawer {
+                                                     :onRequestChange (fn [_] (om/transact! this '[(close-app-bar)]))
+
+                                                     :docked false :open (= true drawer)}
+                                           (ui/menu-item {:key 0} "PhotoSync")
+                                           (ui/divider)
+                                           (ui/menu-item {:key 1 :leftIcon (ic/notification-sync)} "Sync Jobs")
+                                           (ui/menu-item {:key 2 :leftIcon (ic/content-link)} "Linked Services")
+                                           (ui/menu-item {:key 3 :leftIcon (ic/action-credit-card)} "Billing"))]}))))
 
 
 (defui ^:once Jobs
   static om/IQuery
   (query [this]
-    '[:user :jobs/list ?job])
+    '[:jobs/list ?job])
   static om/IQueryParams
   (params [this]
     {:job (om/get-query jobs/JobItem)})
@@ -51,16 +74,17 @@
   (render [this]
     (let [props (om/props this)
           {:keys [jobs/list user]} props]
-      (dom/div #js {:className ""}
-               (ui/app-bar {:title (str (:given_name user) "'s Sync Jobs")})
+      (dom/div nil
+
+
                (ui/floating-action-button
                  {
                   :style    #js {
                                  :margin   "10px"
                                  :position "absolute"
                                  :bottom   "10px"
-                                 :right    "10px"}
-                  :on-click #("blah")}
+                                 :right    "10px"}}
+                  ;:on-click #("blah")}
                  (ic/content-add))))))
 
 
@@ -84,7 +108,7 @@
 
 (defonce reconciler
   (om/reconciler
-    {:state     (atom {})
+    {:state     (atom {:drawer false})
      :normalize true
      :parser    (compassus/parser {:read p/read :mutate p/mutate :route-dispatch false})
      :send      (util/edn-post "/api")}))
