@@ -47,8 +47,8 @@
 (def google-token-endpoint "https://www.googleapis.com/oauth2/v4/token")
 
 (defn gauth-redirect
-  [need-refresh]
-  (str
+  ([need-refresh path]
+   (str
     "https://accounts.google.com/o/oauth2/auth?"
     "access_type=offline&"
     "scope=" (ring.util.codec/url-encode SCOPES) "&"
@@ -57,7 +57,11 @@
     "client_id=" (ring.util.codec/url-encode CLIENT_ID) "&"
     (if need-refresh
       "prompt=consent"
-      "prompt=none")))
+      "prompt=none")
+    (if path
+      (str "&state=" path))))
+  ([need-refresh]
+   (gauth-redirect need-refresh nil)))
 
 
 
@@ -136,6 +140,7 @@
 
 (defroutes auth-routes
  (GET "/login" [] (redirect (gauth-redirect false) :temporary-redirect))
+ ;(GET "/login/:path{[a-z]+}" [path] (redirect (gauth-redirect false path) :temporary-redirect))
  (GET "/authorise" [] (redirect (gauth-redirect true) :temporary-redirect))
  (GET "/oauth2callback" [] google-callback))
 
@@ -150,7 +155,10 @@
            google-details (ds/find-by-key (:googleuser-key session))]
       (if google-details
        (handler (assoc-in req [:user-details] google-details))
-       (redirect "/login" :temporary-redirect))))))
+       (if (= (:uri req) "/api")
+         (-> (response/response "Authorisation required")
+             (ring.util.response/status 401))
+         (redirect "/login" :temporary-redirect)))))))
 
 (defn add-auth [app-routes error-routes extra]
   (->
