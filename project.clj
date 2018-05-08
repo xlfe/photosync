@@ -53,7 +53,7 @@
                              :init-ns photosync.appengine
                              :init    (start-it)}
 
-              :source-paths ["dev/"]
+              :source-paths ["dev/clj"]
               :dependencies
                             [[com.google.appengine/appengine-api-stubs ~appengine-version]
                              [com.google.appengine/appengine-local-runtime ~appengine-version]
@@ -62,11 +62,12 @@
   :cljsbuild {
               :builds {
                        :dev        {
-                                    :source-paths ["src/cljs" "src/clj"]
+                                    :source-paths ["src/cljs" "src/clj" "dev/cljs"]
                                     :figwheel     true
                                     :compiler     {:output-to     "resources/public/js/main.js"
                                                    :output-dir    "resources/public/js/out"
-                                                   :main          photosync.core
+                                                   ;:main          photosync.core
+                                                   :main          photosync.dev
                                                    :asset-path    "js/out"
                                                    :infer-externs true
                                                    :optimizations :none
@@ -77,6 +78,8 @@
                                     ;:figwheel     false
                                     :compiler     {:output-to     "resources/public/js/main.js"
                                                    :infer-externs true
+                                                   ;:pseudo-names true,
+                                                   ;:pretty-print true
                                                    :optimizations :advanced}}}})
 
 

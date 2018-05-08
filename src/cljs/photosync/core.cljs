@@ -22,11 +22,6 @@
 ;; -----------------------------------------------------------------------------
 ;; Components
 
-;(defn set-hash! [loc]
-;  (set! (.-hash js/window.location) loc))
-
-
-(enable-console-print!)
 
 
 (declare app)
@@ -67,8 +62,8 @@
 
 (defn do-nav
   [route]
-  (js-invoke history "setToken" (name route))
-  (set! (. js/document -title) ((route route-titles) nil)))
+  (.setToken history (name route))
+  (set! (.-title js/document) ((route route-titles) nil)))
 
 
 
