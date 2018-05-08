@@ -35,17 +35,26 @@
 (def ^:once event-key (atom nil))
 (def ^:once history (Html5History.))
 
+(defroute index "/" [] (compassus/set-route! app :welcome))
 (defroute welcome "/welcome" [] (compassus/set-route! app :welcome))
 (defroute jobs "/jobs" [] (compassus/set-route! app :jobs))
 (defroute services "/services" [] (compassus/set-route! app :services))
 (defroute billing "/billing" [] (compassus/set-route! app :billing))
 
+
+(defn no-user
+ [text]
+ (fn [user]
+   (if user
+    (str (:given_name user) "'s " text)
+    text)))
+
 (def route-titles
   {
-   :welcome (fn [user] (str (:given_name user) "'s PhotoSync"))
-   :jobs (fn [user] (str (:given_name user) "'s Sync Jobs"))
-   :billing (fn [user] (str (:given_name user) "'s Billing Details"))
-   :services (fn [user] (str (:given_name user) "'s Linked Accounts"))})
+   :welcome (no-user "PhotoSync")
+   :jobs (no-user "Sync Jobs")
+   :billing (no-user "Billing Details")
+   :services (no-user "Linked Accounts")})
 
 
 
@@ -55,42 +64,44 @@
                :title title
                :iconElementLeft (ui/icon-button {
                                                  :className "menubutton"
-                                                 :onClick (fn [e] (om/transact! this '[(open-app-bar)]))}
+                                                 :onClick (fn [_] (om/update-state! this assoc :drawer true))}
                                  (ic/navigation-menu))}))
+
+(defn do-nav
+  [route]
+  (.setToken history (name route)))
 
 (defn menu-click [this key icon text route]
  (ui/menu-item {
-                ;:onClick (fn [_] (compassus.core/set-route! this route))
                 :onClick (fn [_]
-                           ;(compassus.core/set-route! app route {:tx '[(close-app-bar)]})
-                           (.setToken history (name route))
-                           (om/transact! this '[(close-app-bar)]))
+                           (do-nav route)
+                           (om/update-state! this assoc :drawer false))
                 :key key
                 :leftIcon icon} text))
 
 (defui ^:once Base
   static om/IQuery
   (query [this]
-    '[:drawer :user])
+    '[:user])
   Object
   (render [this]
-    (let [{:keys [owner factory props]} (om/get-computed this)
-          {:keys [drawer user]} (om/props this)]
+    (let [{:keys [_ factory props]} (om/get-computed this)
+          {:keys [user]} (om/props this)
+          {:keys [drawer]} (om/get-state this)]
       (ui/mui-theme-provider {
-                              :mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})}
-                         (dom/div nil
-                             (println (compassus/current-route this))
-                             (appbar this (((compassus/current-route this) route-titles) user))
-                             (ui/drawer {
-                                         :onRequestChange (fn [_] (om/transact! this '[(close-app-bar)]))
-
-                                         :docked false :open (= true drawer)}
-                               (menu-click this 0 nil "PhotoSync" :welcome)
-                               (ui/divider)
-                               (menu-click this 1 (ic/notification-sync) "Sync Jobs" :jobs)
-                               (menu-click this 2 (ic/content-link) "Linked Services" :services)
-                               (menu-click this 3 (ic/action-credit-card) "Billing" :billing))
-                             (factory props))))))
+                              :mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-orange-500)}})}
+                             (dom/div nil
+                                      (appbar this (((compassus/current-route this) route-titles) user))
+                                      (ui/drawer {
+                                                  :onRequestChange (fn [_] (om/update-state! this assoc :drawer (false? drawer)))
+                                                  :docked          false :open (= true drawer)}
+                                                 (menu-click this 0 nil "PhotoSync" :welcome)
+                                                 (ui/divider)
+                                                 (menu-click this 1 (ic/notification-sync) "Sync Jobs" :jobs)
+                                                 (menu-click this 2 (ic/content-link) "Linked Services" :services)
+                                                 (menu-click this 3 (ic/action-credit-card) "Billing" :billing))
+                                      (dom/div #js {:style {:padding "100px"}}
+                                        (factory props)))))))
 
 
 (defui ^:once Billing
@@ -167,11 +178,25 @@
                  (ic/content-add))))))
 
 
+(def yashica
+ "https://lh3.googleusercontent.com/qx4Ni3XPOpQq0sp5MIB_9R3YTbTD8509l_f851Em7XzeXAYcV7NqhlwB5u8VFlFwgJLeuw94qZDZ6J51GDVg0YY=s1600")
+
+
 (defui ^:once Welcome
   Object
   (render [this]
-      (dom/div nil
-               "Welcome!")))
+      (dom/div #js {:className "col-lg-6 col-sm-12"}
+            (ui/card
+              (ui/card-header {:title "Welcome to PhotoSync"})
+              (ui/card-media {:overlay (ui/card-title {:title "Relax" :subtitle "We're here to help"})}
+                (dom/img #js {:src yashica}))
+              (ui/card-title {:title "Let's get started" :subtitle "You'll be up and running in no time"})
+              (ui/card-text nil "A few easy steps")
+              (ui/card-actions nil
+                 (ui/flat-button {:onClick (fn [_] (do-nav :services)) :label "1. Link a service"})
+                 (ui/flat-button {:onClick (fn [_] (do-nav :billing)) :label "2. Setup your billing details"})
+                 (ui/flat-button {:onClick (fn [_] (do-nav :jobs)) :label "3. Create a sync job"}))))))
+
 
 
 
