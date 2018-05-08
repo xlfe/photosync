@@ -17,7 +17,7 @@
             [photosync.jobs :as jobs]
             [photosync.parser :as p])
   (:import [goog History]
-           [goog.history EventType]))
+           [goog.history Html5History EventType]))
 
 ;; -----------------------------------------------------------------------------
 ;; Components
@@ -30,6 +30,26 @@
 
 (enable-console-print!)
 
+
+(declare app)
+(def ^:once event-key (atom nil))
+(def ^:once history (Html5History.))
+
+(defroute welcome "/welcome" [] (compassus/set-route! app :welcome))
+(defroute jobs "/jobs" [] (compassus/set-route! app :jobs))
+(defroute services "/services" [] (compassus/set-route! app :services))
+(defroute billing "/billing" [] (compassus/set-route! app :billing))
+
+(def route-titles
+  {
+   :welcome (fn [user] (str (:given_name user) "'s PhotoSync"))
+   :jobs (fn [user] (str (:given_name user) "'s Sync Jobs"))
+   :billing (fn [user] (str (:given_name user) "'s Billing Details"))
+   :services (fn [user] (str (:given_name user) "'s Linked Accounts"))})
+
+
+
+
 (defn appbar [this title]
   (ui/app-bar {
                :title title
@@ -38,6 +58,15 @@
                                                  :onClick (fn [e] (om/transact! this '[(open-app-bar)]))}
                                  (ic/navigation-menu))}))
 
+(defn menu-click [this key icon text route]
+ (ui/menu-item {
+                ;:onClick (fn [_] (compassus.core/set-route! this route))
+                :onClick (fn [_]
+                           ;(compassus.core/set-route! app route {:tx '[(close-app-bar)]})
+                           (.setToken history (name route))
+                           (om/transact! this '[(close-app-bar)]))
+                :key key
+                :leftIcon icon} text))
 
 (defui ^:once Base
   static om/IQuery
@@ -48,20 +77,70 @@
     (let [{:keys [owner factory props]} (om/get-computed this)
           {:keys [drawer user]} (om/props this)]
       (ui/mui-theme-provider {
-                              :mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})
-                              :children [
-                                         (factory props)
-                                         (appbar this (str (:given_name user) "'s Sync Jobs"))
-                                         (ui/drawer {
-                                                     :onRequestChange (fn [_] (om/transact! this '[(close-app-bar)]))
+                              :mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-purple-500)}})}
+                         (dom/div nil
+                             (println (compassus/current-route this))
+                             (appbar this (((compassus/current-route this) route-titles) user))
+                             (ui/drawer {
+                                         :onRequestChange (fn [_] (om/transact! this '[(close-app-bar)]))
 
-                                                     :docked false :open (= true drawer)}
-                                           (ui/menu-item {:key 0} "PhotoSync")
-                                           (ui/divider)
-                                           (ui/menu-item {:key 1 :leftIcon (ic/notification-sync)} "Sync Jobs")
-                                           (ui/menu-item {:key 2 :leftIcon (ic/content-link)} "Linked Services")
-                                           (ui/menu-item {:key 3 :leftIcon (ic/action-credit-card)} "Billing"))]}))))
+                                         :docked false :open (= true drawer)}
+                               (menu-click this 0 nil "PhotoSync" :welcome)
+                               (ui/divider)
+                               (menu-click this 1 (ic/notification-sync) "Sync Jobs" :jobs)
+                               (menu-click this 2 (ic/content-link) "Linked Services" :services)
+                               (menu-click this 3 (ic/action-credit-card) "Billing" :billing))
+                             (factory props))))))
 
+
+(defui ^:once Billing
+  ;static om/IQuery
+  ;(query [this]
+  ;  '[:jobs/list ?job]
+  ;static om/IQueryParams
+  ;(params [this]
+  ;  {:job (om/get-query jobs/JobItem)}
+  Object
+  (render [this]
+    ;(let [props (om/props this)
+    ;      {:keys [jobs/list user]} props
+    (dom/div nil
+
+
+             (ui/floating-action-button
+               {
+                :style    #js {
+                               :margin   "10px"
+                               :position "absolute"
+                               :bottom   "10px"
+                               :right    "10px"}}
+               ;:on-click #("blah")}
+               (ic/content-add)))))
+
+
+(defui ^:once Services
+  ;static om/IQuery
+  ;(query [this]
+  ;  '[:jobs/list ?job]
+  ;static om/IQueryParams
+  ;(params [this]
+  ;  {:job (om/get-query jobs/JobItem)}
+  Object
+  (render [this]
+    ;(let [props (om/props this)
+    ;      {:keys [jobs/list user]} props
+      (dom/div nil
+
+
+               (ui/floating-action-button
+                 {
+                  :style    #js {
+                                 :margin   "10px"
+                                 :position "absolute"
+                                 :bottom   "10px"
+                                 :right    "10px"}}
+                 ;:on-click #("blah")}
+                 (ic/content-add)))))
 
 (defui ^:once Jobs
   static om/IQuery
@@ -87,6 +166,12 @@
                   ;:on-click #("blah")}
                  (ic/content-add))))))
 
+
+(defui ^:once Welcome
+  Object
+  (render [this]
+      (dom/div nil
+               "Welcome!")))
 
 
 
@@ -114,33 +199,24 @@
      :send      (util/edn-post "/api")}))
 
 
-(declare app)
-
-(defroute welcome "/" []
-          (compassus/set-route! app :index))
-
-(defroute login "/login" []
-          (compassus/set-route! app :login))
-
-(def event-key (atom nil))
-(def history
-  (History.))
 
 
 (def app
   (compassus/application
     {:routes  {
-               :login Login
-               :index Jobs}
+               :billing Billing
+               :services Services
+               :welcome Welcome
+               :jobs Jobs}
 
-     :index-route :index
+     :index-route :welcome
      :reconciler reconciler
      :mixins [
               (compassus/wrap-render Base)
               (compassus/did-mount (fn [_]
                                      (reset! event-key
                                              (evt/listen history EventType/NAVIGATE
-                                                         #(secretary/dispatch! (.-token %))))
+                                                 #(secretary/dispatch! (.-token %))))
                                      (.setEnabled history true)))
               (compassus/will-unmount (fn [_]
                                         (evt/unlistenByKey @event-key)))]}))

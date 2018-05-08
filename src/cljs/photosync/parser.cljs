@@ -80,11 +80,11 @@
    (fn []
      (swap! state assoc :drawer true))})
 
-(defmethod mutate 'todo/cancel-edit
-  [{:keys [state]} _ _]
+(defmethod mutate 'navigate
+  [{:keys [state]} _ [route]]
   {:action
    (fn []
-     (swap! state dissoc :todos/editing))})
+     (swap! state update :compassus.core/route route))})
 
 (defmethod mutate 'todos/create-temp
   [{:keys [state]} _ new-todo]
