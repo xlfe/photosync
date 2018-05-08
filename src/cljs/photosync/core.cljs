@@ -22,10 +22,8 @@
 ;; -----------------------------------------------------------------------------
 ;; Components
 
-(defn set-hash! [loc]
-  (set! (.-hash js/window.location) loc))
-(defn redirect! [loc]
-  (set! (.-location js/window) loc))
+;(defn set-hash! [loc]
+;  (set! (.-hash js/window.location) loc))
 
 
 (enable-console-print!)
@@ -69,7 +67,10 @@
 
 (defn do-nav
   [route]
-  (.setToken history (name route)))
+  (js-invoke history "setToken" (name route))
+  (set! (. js/document -title) ((route route-titles) nil)))
+
+
 
 (defn menu-click [this key icon text route]
  (ui/menu-item {
@@ -91,7 +92,7 @@
       (ui/mui-theme-provider {
                               :mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-orange-500)}})}
                              (dom/div nil
-                                      (appbar this (((compassus/current-route this) route-titles) user))
+                                      (appbar this ((or ((compassus/current-route this) route-titles) (fn [_] (str "PhotoSync"))) user))
                                       (ui/drawer {
                                                   :onRequestChange (fn [_] (om/update-state! this assoc :drawer (false? drawer)))
                                                   :docked          false :open (= true drawer)}
@@ -130,12 +131,12 @@
 
 
 (defui ^:once Services
-  ;static om/IQuery
-  ;(query [this]
-  ;  '[:jobs/list ?job]
-  ;static om/IQueryParams
-  ;(params [this]
-  ;  {:job (om/get-query jobs/JobItem)}
+  static om/IQuery
+  (query [this]
+    '[:services/list ?service])
+  static om/IQueryParams
+  (params [this]
+    {:service (om/get-query jobs/JobItem)})
   Object
   (render [this]
     ;(let [props (om/props this)
@@ -207,11 +208,11 @@
       {
        :actions
               [
-               (ui/flat-button {:label "Cancel" :primary false :onClick #(redirect! "https://google.com")})
-               (ui/flat-button {:label "Login" :primary true :onClick #(redirect! "/login")})]
+               (ui/flat-button {:label "Cancel" :primary false :onClick #(util/redirect! "https://google.com")})
+               (ui/flat-button {:label "Login" :primary true :onClick #(util/redirect! "/login")})]
        :open  true :modal true
-       :title "Please login to PhotoSync.Net using your Google Account"}
-      "PhotoSync.Net uses your Google Account to identify you")))
+       :title "Session Expired"}
+      "Your session has expired - please login again.")))
 
 
 
@@ -224,7 +225,7 @@
      :send      (util/edn-post "/api")}))
 
 
-
+(def log (.-log js/console))
 
 (def app
   (compassus/application
@@ -232,6 +233,7 @@
                :billing Billing
                :services Services
                :welcome Welcome
+               :login Login
                :jobs Jobs}
 
      :index-route :welcome
@@ -241,7 +243,7 @@
               (compassus/did-mount (fn [_]
                                      (reset! event-key
                                              (evt/listen history EventType/NAVIGATE
-                                                 #(secretary/dispatch! (.-token %))))
+                                                   #(secretary/dispatch! (.-token %))))
                                      (.setEnabled history true)))
               (compassus/will-unmount (fn [_]
                                         (evt/unlistenByKey @event-key)))]}))

@@ -15,6 +15,9 @@
     word
     (str word "s")))
 
+(defn redirect! [loc]
+  (set! (.-location js/window) loc))
+
 (defn edn-post [url]
   (fn [{:keys [remote]} cb]
     (.send XhrIo url

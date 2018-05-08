@@ -74,12 +74,6 @@
      (swap! state dissoc :drawer))})
 
 
-(defmethod mutate 'open-app-bar
-  [{:keys [state]} _ {:keys [db/id]}]
-  {:action
-   (fn []
-     (swap! state assoc :drawer true))})
-
 (defmethod mutate 'navigate
   [{:keys [state]} _ [route]]
   {:action
