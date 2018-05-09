@@ -22,7 +22,7 @@
 ;; -----------------------------------------------------------------------------
 ;; Components
 
-
+(enable-console-print!)
 
 (declare app)
 (def ^:once event-key (atom nil))
