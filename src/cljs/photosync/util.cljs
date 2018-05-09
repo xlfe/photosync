@@ -23,10 +23,11 @@
     (.send XhrIo url
            (fn [e]
              (this-as this
-               (println (.getStatus this))
+               ;(println (str "stats " (.getStatus this)))
                (if (.isSuccess this)
                  (cb (reader/read-string (.getResponseText this)))
-                 (cb {:compassus.core/route :login}))))
+                 (if (= (.getStatus this) 401)
+                   (cb {:compassus.core/route :login})))))
 
            "POST" (prn-str remote)
            #js {"Content-Type" "application/edn"})))

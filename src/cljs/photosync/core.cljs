@@ -128,10 +128,10 @@
 (defui ^:once Services
   static om/IQuery
   (query [this]
-    '[:services/list ?service])
+    '[(:services/list {:start ?service})])
   static om/IQueryParams
   (params [this]
-    {:service (om/get-query jobs/JobItem)})
+    {:service 4})
   Object
   (render [this]
     ;(let [props (om/props this)
@@ -150,12 +150,12 @@
                  (ic/content-add)))))
 
 (defui ^:once Jobs
-  static om/IQuery
-  (query [this]
-    '[:jobs/list ?job])
-  static om/IQueryParams
-  (params [this]
-    {:job (om/get-query jobs/JobItem)})
+  ;static om/IQuery
+  ;(query [this]
+  ;  '[:jobs/list ?job]
+  ;static om/IQueryParams
+  ;(params [this]
+  ;  {:job (om/get-query jobs/JobItem)}
   Object
   (render [this]
     (let [props (om/props this)

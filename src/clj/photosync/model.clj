@@ -28,6 +28,7 @@
 (h/defentity oauth-token
             [__indexed :default [:owner :source]]
             [owner :type (ht/foreign-key :googleuser)]
+            [created-at]
             [access_token]
             [refresh_token]
             [source]

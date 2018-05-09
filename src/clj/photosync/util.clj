@@ -79,12 +79,11 @@
                  (assoc acc new-kw v)))
              {} m))
 
-;(defn fake-datomic
-;  "add a namespace to keys to look like a datom"
-;  [e]
-;  (let [kind
-;        (->> (util/->kebab-case (entity-kind e)))
-;    (map->nsmap e kind)))
+(defn fake-datomic
+  "add a namespace to keys to look like a datom"
+  [e]
+  (let [kind (->kebab-case (:kind e))]
+    (map->nsmap (dissoc e :kind) kind)))
 
 
 (defn ?assoc

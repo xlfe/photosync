@@ -66,20 +66,6 @@
    (fn []
      (swap! state update-in ref merge new-props))})
 
-
-(defmethod mutate 'close-app-bar
-  [{:keys [state]} _ {:keys [db/id]}]
-  {:action
-   (fn []
-     (swap! state dissoc :drawer))})
-
-
-(defmethod mutate 'navigate
-  [{:keys [state]} _ [route]]
-  {:action
-   (fn []
-     (swap! state update :compassus.core/route route))})
-
 (defmethod mutate 'todos/create-temp
   [{:keys [state]} _ new-todo]
   {:value [:todos/list]

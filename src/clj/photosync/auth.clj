@@ -144,26 +144,35 @@
  (GET "/authorise" [] (redirect (gauth-redirect true) :temporary-redirect))
  (GET "/oauth2callback" [] google-callback))
 
+(defn no-cache [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (assoc-in response [:headers "Cache-Control"] "no-cache"))))
+
+
 (defn auth-user [handler]
   "Add :user-details based on the :session :identity and call the handler,
   or if the user details can't be found, redirect to /login. Don't apply the test to any of the auth-routes"
   (fn [req]
-    (if (some #{(:uri req)} ["/login" "/authorise" "/oauth2callback"])
+    (if (re-matches #"/(login|authorise|oauth2callback|login-failed)" (:uri req))
      (handler req)
      (let [session-key (get-in req [:session :identity])
            session (get-session session-key)
            google-details (ds/find-by-key (:googleuser-key session))]
       (if google-details
        (handler (assoc-in req [:user-details] google-details))
-       (if (= (:uri req) "/api")
-         (-> (response/response "Authorisation required")
+       (do
+        (log/info (str "no google-details for " (:uri req)))
+        (if (= (:uri req) "/api")
+          (-> (response/response "Authorisation required")
              (ring.util.response/status 401))
-         (redirect "/login" :temporary-redirect)))))))
+          (redirect "/login" :temporary-redirect))))))))
 
 (defn add-auth [app-routes error-routes extra]
   (->
    (compojure.core/routes app-routes auth-routes error-routes)
    auth-user
+   no-cache
    (wrap-session {
                   :store (cookie-store "s090DMJ90iosahiosuisdfaweSOMEoBiy}+y{JolJK%1/)F")
                   :cookie-name "S"
