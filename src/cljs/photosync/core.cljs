@@ -15,6 +15,7 @@
 
             [photosync.util :as util :refer [hidden pluralize]]
             [photosync.jobs :as jobs]
+            [photosync.services :as services]
             [photosync.parser :as p])
   (:import [goog History]
            [goog.history Html5History EventType]))
@@ -128,26 +129,22 @@
 (defui ^:once Services
   static om/IQuery
   (query [this]
-    '[(:services/list {:start ?service})])
-  static om/IQueryParams
-  (params [this]
-    {:service 4})
+    '[(:services/list)])
   Object
   (render [this]
-    ;(let [props (om/props this)
-    ;      {:keys [jobs/list user]} props
-      (dom/div nil
-
-
-               (ui/floating-action-button
+    (let [props (om/props this)
+          {:keys [services/list]} props]
+      (dom/div #js {:className "col-lg-6 col-sm-12"}
+         (map services/service list)
+         (ui/floating-action-button
                  {
                   :style    #js {
                                  :margin   "10px"
                                  :position "absolute"
                                  :bottom   "10px"
                                  :right    "10px"}}
-                 ;:on-click #("blah")}
-                 (ic/content-add)))))
+                 ;:on-click #("blah")
+                 (ic/content-add))))))
 
 (defui ^:once Jobs
   ;static om/IQuery

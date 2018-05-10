@@ -37,9 +37,8 @@
 (defmethod readf :services/list
   [{:keys [user-details]} _ params]
   (let
-    [accounts (map #(select-keys % [:created-at :source :key :kind]) (ds/find-by-kind :oauth-token :filters [:= :owner (:key user-details)]))]
-    (println (str "services/list" (:given_name user-details) accounts))
-    {:value (map util/fake-datomic accounts)}))
+    [accounts (map #(select-keys % [:created-at :source :key]) (ds/find-by-kind :oauth-token :filters [:= :owner (:key user-details)]))]
+    {:value accounts}))
 
 ;; =============================================================================
 ;; Mutations

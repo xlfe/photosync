@@ -58,3 +58,4 @@
         ;(edit-field this props)))))
 
 (def job (om/factory JobItem {:keyfn :db/id}))
+
