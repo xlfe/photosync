@@ -161,20 +161,23 @@
            google-details (ds/find-by-key (:googleuser-key session))]
       (if google-details
        (handler (assoc-in req [:user-details] google-details))
-       (do
-        (log/info (str "no google-details for " (:uri req)))
-        (if (= (:uri req) "/api")
-          (-> (response/response "Authorisation required")
+       (if (= (:uri req) "/api")
+         (-> (response/response "Authorisation required")
              (ring.util.response/status 401))
-          (redirect "/login" :temporary-redirect))))))))
+         (redirect "/login" :temporary-redirect)))))))
+
+(def cookie-key
+  "must be 16 characters or each code reload will invalidate existing cookies"
+  "*$!)dj20CsKcd8B%")
+(assert (= 16 (count cookie-key)))
 
 (defn add-auth [app-routes error-routes extra]
   (->
    (compojure.core/routes app-routes auth-routes error-routes)
    auth-user
-   no-cache
+   ;no-cache
    (wrap-session {
-                  :store (cookie-store "s090DMJ90iosahiosuisdfaweSOMEoBiy}+y{JolJK%1/)F")
+                  :store (cookie-store cookie-key)
                   :cookie-name "S"
                   :cookie-attrs (merge {:max-age 3600 :http-only true} extra)})))
 
