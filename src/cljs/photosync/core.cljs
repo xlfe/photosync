@@ -133,18 +133,29 @@
   Object
   (render [this]
     (let [props (om/props this)
+          {:keys [menu-shown]} (om/get-state this)
           {:keys [services/list]} props]
       (dom/div #js {:className "col-lg-6 col-sm-12"}
          (map services/service list)
          (ui/floating-action-button
                  {
+                  :id "fab-services"
                   :style    #js {
                                  :margin   "10px"
                                  :position "absolute"
                                  :bottom   "10px"
-                                 :right    "10px"}}
-                 ;:on-click #("blah")
-                 (ic/content-add))))))
+                                 :right    "10px"}
+                  :onClick (fn [_] (om/update-state! this assoc :menu-shown true))}
+                 (ic/content-add))
+         (ui/popover {
+                      :open (= menu-shown true)
+                      :anchorEl (js/document.getElementById "fab-services")
+                      :canAutoPosition true
+                      :onRequestClose (fn [_] (om/update-state! this assoc :menu-shown false))
+                      :anchorOrigin {"horizontal" "middle" "vertical" "top"}
+                      :targetOrigin {"horizontal" "right" "vertical" "bottom"}}
+          (ui/menu
+            (menu-click this 1 (ic/image-photo-album) "SmugMug" :jobs)))))))
 
 (defui ^:once Jobs
   ;static om/IQuery
