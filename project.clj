@@ -14,6 +14,7 @@
                  [cljsjs/react "16.2.0-3"]
                  [cljsjs/react-dom "16.2.0-3"]
                  [camel-snake-kebab "0.4.0"]
+                 [clj-oauth "1.5.5"]
 
                  [ring "1.6.3"]
                  [ring/ring-ssl "0.3.0"]
