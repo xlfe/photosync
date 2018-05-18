@@ -98,12 +98,6 @@
     (:key (ds/save (util/safe-merge user-record user-details)))
     (:key (ds/save {:kind :google-user} user-details))))
 
-(defn save-or-update-oauth
-  [details]
-  (if-let [record (first (ds/find-by-kind :oauth-token :filters [[:= :owner (:owner details)][:= :source (:source details)]]))]
-    (:key (ds/save (util/safe-merge record details)))
-    (:key (ds/save {:kind :oauth-token} details))))
-
 (defn google-complete-flow
    [code]
    (let [access-token-response (google-get-token {:code code :grant_type "authorization_code"})
@@ -112,11 +106,11 @@
          expires (get access-token-response "expires_in")
          user-details (google-user-details access-token)
          googleuser-key (save-or-get-google-user user-details)
-         token-key (save-or-update-oauth  {:owner googleuser-key
-                                           :access_token access-token
-                                           :source "google"
-                                           :refresh_token refresh-token
-                                           :expires (java-date (plus (instant) (seconds expires)))})
+         token-key (models/save-or-update-oauth  {:owner googleuser-key
+                                                   :access_token access-token
+                                                   :source "google"
+                                                   :refresh_token refresh-token
+                                                   :expires (java-date (plus (instant) (seconds expires)))})
          session-key (make-session googleuser-key)]
 
 

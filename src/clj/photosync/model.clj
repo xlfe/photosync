@@ -2,12 +2,14 @@
   (:require
     [hyperion.api :as h]
     [clojure.tools.logging :as log]
+    [photosync.util :as util]
     [hyperion.types :as ht]))
 
 
 
 (h/defentity user-session
      [googleuser-key :type (ht/foreign-key :googleuser)]
+     [misc :packer pr-str :unpacker read-string :default "nil"]
      [created-at]) ; populated automaticaly
 
 (h/defentity google-user
@@ -33,6 +35,13 @@
             [refresh_token]
             [source]
             [expires])
+
+
+(defn save-or-update-oauth
+  [details]
+  (if-let [record (first (h/find-by-kind :oauth-token :filters [[:= :owner (:owner details)][:= :source (:source details)]]))]
+    (:key (h/save (util/safe-merge record details)))
+    (:key (h/save {:kind :oauth-token} details))))
 
 ;access_token  The token that your application sends to authorize a Google API request.
 ;refresh_token  A token that you can use to obtain a new access token. Refresh tokens are valid until the user revokes access. Note that refresh tokens are always returned for installed applications.

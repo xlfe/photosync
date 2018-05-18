@@ -1,6 +1,6 @@
 (ns photosync.core
   (:require
-    [compojure.core :refer [defroutes ANY GET POST]]
+    [compojure.core :refer [defroutes routes ANY GET POST]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.middleware.ssl :refer [wrap-hsts]]
     [clojure.walk :as walk]
@@ -13,6 +13,7 @@
     [photosync.parser :as parser]
     [om.next.server :as om]
     [photosync.model :as model]
+    [photosync.smugmug :as smugmug]
     [photosync.secrets :as secrets]
     [photosync.auth :as auth]
     [hyperion.gae]
@@ -65,22 +66,22 @@
 (def resource-root {:root "public"})
 
 (defroutes app-routes
-   (ANY "/api" [] api-resource)
-   (GET  "/" [] (resource-response "html/index.html" resource-root))
-   (route/resources "/" resource-root))
+     (ANY "/api" [] api-resource)
+     (GET  "/" [] (resource-response "html/index.html" resource-root))
+     (route/resources "/" resource-root))
 
 (defroutes error-routes
    (route/not-found (resource-response "html/404.html" resource-root)))
 
 (def prod-handler
-  (-> app-routes ; main app routes
+  (-> (routes app-routes smugmug/smug-routes)
       wrap-hsts         ; HTTP Strict Transport Security
       wrap-params       ; parse urlencoded parameters from the query string and form body
       parse-edn-body
       (auth/add-auth error-routes {:secure true})))     ; authentication using cookies and google user details
 
 (def dev-handler
-  (-> app-routes
+  (-> (routes app-routes smugmug/smug-routes)
       wrap-params
       parse-edn-body
       (auth/add-auth error-routes {:secure false})     ; authentication using cookies and google user details
