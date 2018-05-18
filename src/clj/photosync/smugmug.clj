@@ -79,6 +79,21 @@
 ; If user does consent, complete the flow
 ;{:oauth_token 3tXVtxZLB6nXDqfCJRWR7TvfttsCDvSp, :oauth_token_secret vSjZstQjfCcfdHWshjkF6f5rzWR84ts3DZhPmW8nWcRZNbbLs5jnbpGhm74zpKt9}
 
+(def SMUGMUG_USER "https://api.smugmug.com/api/v2!authuser")
+
+(defn smug-request
+  [oauth uri method]
+  (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri)]
+     (:Response (parse/parse-string (:body (http/request {:method (name method) :accept :json :url uri :query-params creds})) true))))
+
+
+(defn update-smuguser
+ [oauth]
+ (let [user-details (smug-request oauth SMUGMUG_USER :GET)]
+   (log/warn user-details)
+   (models/save-or-update :smug-user (:owner oauth) (merge {:owner (:owner oauth)} (:User user-details)))))
+
+
 (defn smugmug-callback
  [req]
  (let [params (:params (ring.middleware.params/params-request req))
@@ -89,32 +104,28 @@
        oauth_verifier (get params "oauth_verifier")
        access-token-response (oauth/access-token consumer
                                                  oauth_token
-                                                 oauth_verifier)]
-
+                                                 oauth_verifier)
+       oauth {:owner googleuser-key
+              :access_token (:oauth_token access-token-response)
+              :source "smugmug"
+              :refresh_token (:oauth_token_secret access-token-response)
+              :expires nil}]
+      (models/save-or-update-oauth oauth)
       (save-session-misc req (dissoc session-misc :smugmug_req_token))
-      (models/save-or-update-oauth  {:owner googleuser-key
-                                     :access_token (:oauth_token access-token-response)
-                                     :source "smugmug"
-                                     :refresh_token (:oauth_token_secret access-token-response)
-                                     :expires nil})
+      (update-smuguser oauth)
       (redirect "/#services" :temporary-redirect)))
-
-(def SMUGMUG_USER "https://api.smugmug.com/api/v2!authuser")
-
-(defn smug-request
-  [req uri method]
-  (let [session (get-session req)
-        guk (:googleuser-key session)]
-    (if-let [oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))]
-      (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri)]
-       (:Response (parse/parse-string (:body (http/request {:method (name method) :accept :json :url uri :query-params creds})) true))))))
-
 
 
 (defn smugmug-user
  [req]
- (let [user (smug-request req SMUGMUG_USER :GET)]
-   (response (prn-str user))))
+ (let [session (get-session req)
+        guk (:googleuser-key session)]
+   (do
+    (let [oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))]
+      (update-smuguser oauth))
+    (if-let [smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))]
+     (response (prn-str smug))
+     (response "not-found")))))
 
 
 (defroutes smug-routes

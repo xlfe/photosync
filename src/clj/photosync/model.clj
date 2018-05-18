@@ -43,6 +43,12 @@
     (:key (h/save (util/safe-merge record details)))
     (:key (h/save {:kind :oauth-token} details))))
 
+(defn save-or-update
+  [kind owner update]
+  (if-let [record (first (h/find-by-kind kind :filters [:= :owner owner]))]
+    (:key (h/save (util/safe-merge record update)))
+    (:key (h/save {:kind kind } update))))
+
 ;access_token  The token that your application sends to authorize a Google API request.
 ;refresh_token  A token that you can use to obtain a new access token. Refresh tokens are valid until the user revokes access. Note that refresh tokens are always returned for installed applications.
 ;expires_in  The remaining lifetime of the access token in seconds.
@@ -56,7 +62,7 @@
 
 
 ; Populated from 	/api/v2/user/<NICKNAME>
-(h/defentity SmugUser
+(h/defentity smug-user
  [owner :type (ht/foreign-key :googleuser)]
  [AccountStatus]
  [FirstName]
@@ -69,6 +75,11 @@
  [Name]
  [Uri]
  [WebUri])
+
+
+; https://api.smugmug.com/api/v2/node/<NODE>
+; !children?SortDirection=Descending&SortMethod=DateModified&Type=All
+
 
 (h/defentity SmugNode
  [owner :type (ht/foreign-key :googleuser)])
