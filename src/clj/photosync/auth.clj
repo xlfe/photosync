@@ -171,7 +171,7 @@
    auth-user
    ;no-cache
    (wrap-session {
-                  :store (cookie-store cookie-key)
+                  :store (cookie-store {:key cookie-key})
                   :cookie-name "S"
                   :cookie-attrs (merge {:max-age 3600 :http-only true} extra)})))
 
