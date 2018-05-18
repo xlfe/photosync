@@ -16,6 +16,7 @@
     [photosync.smugmug :as smugmug]
     [photosync.secrets :as secrets]
     [photosync.auth :as auth]
+    [photosync.cron :as cron]
     [hyperion.gae]
     [hyperion.api :as ds]
 
@@ -74,14 +75,14 @@
    (route/not-found (resource-response "html/404.html" resource-root)))
 
 (def prod-handler
-  (-> (routes app-routes smugmug/smug-routes)
+  (-> (routes app-routes cron/cron-routes smugmug/smug-routes)
       wrap-hsts         ; HTTP Strict Transport Security
       wrap-params       ; parse urlencoded parameters from the query string and form body
       parse-edn-body
       (auth/add-auth error-routes {:secure true})))     ; authentication using cookies and google user details
 
 (def dev-handler
-  (-> (routes app-routes smugmug/smug-routes)
+  (-> (routes app-routes cron/cron-routes smugmug/smug-routes)
       wrap-params
       parse-edn-body
       (auth/add-auth error-routes {:secure false})     ; authentication using cookies and google user details

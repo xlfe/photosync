@@ -12,5 +12,6 @@ cd target/war
 jar xf ../*standalone.war 
 cd ../..
 ln -s ../../../appengine-web.xml target/war/WEB-INF/
+ln -s ../../../cron.xml target/war/WEB-INF/
 ln -s ../../../logging.properties target/war/WEB-INF/
 appcfg.sh update target/war
