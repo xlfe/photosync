@@ -1,6 +1,6 @@
 (ns photosync.smugmug
   (:use compojure.core)
-  (:require [clj-http.client :as client]
+  (:require [clj-http.client :as http]
             [clojure.tools.logging :as log]
 
             [ring.util.response :refer [redirect response]]
@@ -99,8 +99,27 @@
                                      :expires nil})
       (redirect "/#services" :temporary-redirect)))
 
+(def SMUGMUG_USER "https://api.smugmug.com/api/v2!authuser")
+
+(defn smug-request
+  [req uri method]
+  (let [session (get-session req)
+        guk (:googleuser-key session)]
+    (if-let [oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))]
+      (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri)]
+       (:Response (parse/parse-string (:body (http/request {:method (name method) :accept :json :url uri :query-params creds})) true))))))
+
+
+
+(defn smugmug-user
+ [req]
+ (let [user (smug-request req SMUGMUG_USER :GET)]
+   (response (prn-str user))))
+
+
 (defroutes smug-routes
  (GET "/getsmug" [] smugmug-redirect)
+ (GET "/smugmug_test" [] smugmug-user)
  (GET "/smugmug_callback" [] smugmug-callback))
 
 
