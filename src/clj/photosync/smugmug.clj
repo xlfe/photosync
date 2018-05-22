@@ -79,19 +79,30 @@
 ; If user does consent, complete the flow
 ;{:oauth_token 3tXVtxZLB6nXDqfCJRWR7TvfttsCDvSp, :oauth_token_secret vSjZstQjfCcfdHWshjkF6f5rzWR84ts3DZhPmW8nWcRZNbbLs5jnbpGhm74zpKt9}
 
+(def SMUG_HEADERS {"User-Agent" "PhotoSync.Net-Server"})
 (def SMUGMUG_USER "https://api.smugmug.com/api/v2!authuser")
+(defn USER_EP [user endpoint] (str "https://api.smugmug.com/api/v2/user/" user "!" endpoint))
 
 (defn smug-request
   [oauth uri method]
-  (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri)]
-     (:Response (parse/parse-string (:body (http/request {:method (name method) :accept :json :url uri :query-params creds})) true))))
+  (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri)
+        resp (http/request {:method (name method) :accept :json :headers SMUG_HEADERS :url uri :query-params creds})
+        rl-remain (get-in resp [:headers :X-RateLimit-Remaining])]
+     (log/info (str "Calls remaining: " rl-remain))
+     (:Response (parse/parse-string (:body resp) true))))
 
 
 (defn update-smuguser
  [oauth]
- (let [user-details (smug-request oauth SMUGMUG_USER :GET)]
-   (log/warn user-details)
-   (models/save-or-update :smug-user (:owner oauth) (merge {:owner (:owner oauth)} (:User user-details)))))
+ (let [user-details (smug-request oauth SMUGMUG_USER :GET)
+       username (get-in user-details [:User :Name])
+       bio-img (smug-request oauth (USER_EP username "bioimage" ) :GET)]
+   (models/save-or-update :smug-user (:owner oauth)
+                          (merge
+                            {:owner (:owner oauth)}
+                            {:bio-thumb (get-in bio-img [:BioImage :ThumbnailUrl])}
+                            {:node (get-in user-details [:User :Uris :Node :Uri])}
+                            (:User user-details)))))
 
 
 (defn smugmug-callback

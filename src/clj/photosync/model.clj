@@ -73,17 +73,20 @@
  [Domain]
  [DomainOnly]
  [Name]
- [Uri]
+ [node]
+ [Plan]
+ [bio-thumb]
+ [RefTag]
  [WebUri])
 
 
-; https://api.smugmug.com/api/v2/node/<NODE>
-; !children?SortDirection=Descending&SortMethod=DateModified&Type=All
 
 
-(h/defentity SmugNode
- [owner :type (ht/foreign-key :googleuser)])
-
+(h/defentity SmugNodes
+ [owner :type (ht/foreign-key :googleuser)]
+ [smugmug :type (ht/foreign-key :smug-user)]
+ [updated-at]
+ [data])
 
 
 (h/defentity SmugAlbum
