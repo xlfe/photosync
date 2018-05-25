@@ -3,7 +3,9 @@
     [hyperion.api :as h]
     [clojure.tools.logging :as log]
     [photosync.util :as util]
-    [hyperion.types :as ht]))
+    [hyperion.types :as ht]
+    [hyperion.gae.types :as gt])
+ (:import [com.google.appengine.api.datastore Blob]))
 
 
 
@@ -44,8 +46,8 @@
     (:key (h/save {:kind :oauth-token} details))))
 
 (defn save-or-update
-  [kind owner update]
-  (if-let [record (first (h/find-by-kind kind :filters [:= :owner owner]))]
+  [kind filters update]
+  (if-let [record (first (h/find-by-kind kind :filters filters))]
     (:key (h/save (util/safe-merge record update)))
     (:key (h/save {:kind kind } update))))
 
@@ -82,11 +84,11 @@
 
 
 
-(h/defentity SmugNodes
+(h/defentity smug-node
  [owner :type (ht/foreign-key :googleuser)]
  [smugmug :type (ht/foreign-key :smug-user)]
  [updated-at]
- [data])
+ [data :type Blob])
 
 
 (h/defentity SmugAlbum
