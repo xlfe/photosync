@@ -12,10 +12,7 @@
             [clojure.java.io :as io]
             [cheshire.core :as parse]
             [hyperion.api :as ds]
-            [java-time.temporal :refer [instant]]
-            [java-time.core :refer [plus]]
-            [java-time.pre-java8 :refer [java-date]]
-            [java-time.amount :refer [seconds]]
+            [java-time :as time]
             [photosync.model :as models]
             [photosync.util :as util]
             [photosync.walk :as walk]
@@ -167,9 +164,12 @@
    (:HasChildren node)
    (nil? (:children node))))
 
+;(< (time/as (time/duration req-start (time/instant)) :seconds) 5)
 (defn update-if-req
- [oauth node]
- (if (needs-fetching node)
+ [req-start oauth node]
+ (if (and
+       (needs-fetching node)
+       (<= (swap! req-start inc) 1))
    (let [children (:Node (smug-request oauth (walk/NODE_URI_CHILDREN (:Uri node)) :GET walk/SORT_PARAMS))
          nodes (map #(select-keys % walk/NODE_KEYS) children)]
     (merge node {:children nodes}))
@@ -182,14 +182,15 @@
        oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
        start-root (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))
-       updated-root (cw/postwalk (partial update-if-req oauth) start-root)]
+       req-count (atom 0)
+       updated-root (cw/postwalk (partial update-if-req req-count oauth) start-root)]
    (do
      (models/save-or-update :smug-node [[:= :owner guk] [:= :smugmug (:key smug)]]
                               {
                                :smugmug (:key smug)
                                :data (nippy/freeze updated-root)
                                :owner guk})
-     (response (with-out-str (pp/pprint updated-root))))))
+     (response (str "OK - " @req-count " nodes have children to fetch")))))
 
 (defn view-smugmug-nodes
  [req]
