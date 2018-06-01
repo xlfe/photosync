@@ -16,6 +16,7 @@
                  [camel-snake-kebab "0.4.0"]
                  [clj-oauth "1.5.5"]
                  [com.taoensso/nippy "2.14.0"]
+                 [clojure-humanize "0.2.2"]
 
                  [ring "1.6.3"]
                  [ring/ring-ssl "0.3.0"]

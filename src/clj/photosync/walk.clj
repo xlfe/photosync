@@ -33,7 +33,7 @@
                                                  :filteruri ["LargestImage"]
                                                  :expand    {
                                                              :LargestImage {
-                                                                            :filter ["Url"]}}}}}}}))
+                                                                              :filter ["Url"]}}}}}}}))
 
 
 
@@ -68,6 +68,14 @@
   :UrlPath ; /Card
   :WebUri])  ;https://***REMOVED***/Card/n-***REMOVED***
 
+(def MIN_KEYS
+  [
+   :Name
+   :NodeID
+   :OriginalSizes
+   :WebUri
+   :ImageCount
+   :children])
 
 
 ; we start at the root node and walk all the nodes breadth first

@@ -13,6 +13,7 @@
             [cheshire.core :as parse]
             [hyperion.api :as ds]
             [java-time :as time]
+            [clojure.contrib.humanize :as human]
             [photosync.model :as models]
             [photosync.util :as util]
             [photosync.walk :as walk]
@@ -175,6 +176,25 @@
     (merge node {:children nodes}))
    node))
 
+
+(defn get-album
+  [node]
+  (get-in node [:Uris :Album :Album]))
+
+(defn get-images
+ [node]
+ (let [img (get-in node [:Uris :Album :Album :Uris :HighlightImage :Image])]
+   {:largest_image (get-in img [:Uris :LargestImage :LargestImage :Url])
+    :thumb_image   (get-in img [:ThumbnailUrl])}))
+
+(defn filter-nodes
+ [node]
+ (cond
+   ((complement nil?) (get-album node)) (merge (select-keys (get-album node) walk/MIN_KEYS) (get-images node))
+   (:children node) (select-keys node walk/MIN_KEYS)
+   (:Type node) nil
+   :else node))
+
 (defn update-smugmug-nodes
  [req]
  (let [session (get-session req)
@@ -192,13 +212,22 @@
                                :owner guk})
      (response (str "OK - " @req-count " nodes have children to fetch")))))
 
+(defn albums-from-node
+ [node]
+ (filter (complement nil?) (map #(get-in % [:Uris :Album :Album]) (tree-seq :HasChildren :children node))))
+
 (defn view-smugmug-nodes
  [req]
  (let [session (get-session req)
        guk (:googleuser-key session)
        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))]
-      (response (with-out-str (pp/pprint root-node)))))
+       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))
+       albums (albums-from-node root-node)
+       na (count albums)
+       sum (apply + (map :OriginalSizes albums))]
+     (response (with-out-str (pp/pprint (cw/prewalk filter-nodes root-node))))))
+     ;(response (with-out-str (pp/pprint root-node)))))
+     ;(response (str na " albums, total: " (human/filesize sum)))))
 
 
 
