@@ -4,6 +4,7 @@
     [clojure.tools.logging :as log]
     [photosync.model :as model]
     [photosync.util :as util]
+    [photosync.accounts :as accounts]
     [photosync.model :refer [google-user]])
   (:refer-clojure :exclude [read]))
   ;(:import
@@ -37,7 +38,7 @@
 (defmethod readf :services/list
   [{:keys [user-details]} _ params]
   (let
-    [accounts (map #(select-keys % [:created-at :source :key]) (ds/find-by-kind :oauth-token :filters [:= :owner (:key user-details)]))]
+    [accounts (accounts/get-valid-accounts (:key user-details))]
     {:value accounts}))
 
 ;; =============================================================================

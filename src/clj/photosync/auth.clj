@@ -82,12 +82,10 @@
                               access-token)))
                       true)) ;;get keywords back...
 
-(defn make-session [gid]
-  (:key (ds/save (models/user-session {:googleuser-key gid}))))
+;(defn make-session [gid]
+;  (:key (ds/save (models/user-session {:googleuser-key gid}))))
 
 
-(defn get-session [key]
-  (ds/find-by-key key))
 
 
 
@@ -106,12 +104,15 @@
          expires (get access-token-response "expires_in")
          user-details (google-user-details access-token)
          googleuser-key (save-or-get-google-user user-details)
-         token-key (models/save-or-update-oauth  {:owner googleuser-key
-                                                   :access_token access-token
-                                                   :source "google"
-                                                   :refresh_token refresh-token
-                                                   :expires (java-date (plus (instant) (seconds expires)))})
-         session-key (make-session googleuser-key)]
+         token-key (models/save-or-update :oauth-token
+                                          [[:= :owner googleuser-key] [:= :account-key googleuser-key]]
+                                          {:owner googleuser-key
+                                           :account-key googleuser-key
+                                           :account-type "Google"
+                                           :access_token access-token
+                                           :refresh_token refresh-token
+                                           :expires (java-date (plus (instant) (seconds expires)))})
+         session-key (:key (ds/save {:kind :user-session :googleuser-key googleuser-key}))]
 
 
     ;(log/info (str "access-token: " access-token))
@@ -126,6 +127,7 @@
 ; If user doesn't consent, redirect to a message
 ; If user does consent, complete the flow
 (defn google-callback [req]
+  (log/info (:params (ring.middleware.params/params-request req)))
   (if-let [code (get (:params (ring.middleware.params/params-request req)) "code")]
     (google-complete-flow code)
     (redirect "/login-failed")))
@@ -134,7 +136,6 @@
 
 (defroutes auth-routes
  (GET "/login" [] (redirect (gauth-redirect false) :temporary-redirect))
- ;(GET "/login/:path{[a-z]+}" [path] (redirect (gauth-redirect false path) :temporary-redirect))
  (GET "/authorise" [] (redirect (gauth-redirect true) :temporary-redirect))
  (GET "/oauth2callback" [] google-callback))
 
@@ -143,22 +144,38 @@
     (let [response (handler request)]
       (assoc-in response [:headers "Cache-Control"] "no-cache"))))
 
+(defn no-session
+  "The request has no session
+   Save the URI requested into a new session and provide a cookie"
+ [req]
+ (let [session (:key (ds/save {:kind :user-session :last-uri (:uri req)}))]
+  (assoc-in (redirect "/login" :temporary-redirect) [:session :identity] session)))
+
+(defn check-user
+  "The request has an associated session"
+  [handler req session]
+  (let [{:keys [:googleuser-key :last-uri]} session
+        user-details (ds/find-by-key googleuser-key)]
+    (if user-details
+      (handler (assoc-in req [:user-details] user-details))
+      (if (= (:uri req) "/api")
+        (-> (response/response "Authorisation required")
+            (ring.util.response/status 401))
+        (do
+          (ds/save (util/safe-merge session {:last-uri (:uri req)}))
+          (redirect "/login" :temporary-redirect))))))
+
+
 
 (defn auth-user [handler]
   "Add :user-details based on the :session :identity and call the handler,
   or if the user details can't be found, redirect to /login. Don't apply the test to any of the auth-routes"
   (fn [req]
-    (if (re-matches #"/(login|authorise|oauth2callback|login-failed)" (:uri req))
-     (handler req)
-     (let [session-key (get-in req [:session :identity])
-           session (get-session session-key)
-           google-details (ds/find-by-key (:googleuser-key session))]
-      (if google-details
-       (handler (assoc-in req [:user-details] google-details))
-       (if (= (:uri req) "/api")
-         (-> (response/response "Authorisation required")
-             (ring.util.response/status 401))
-         (redirect "/login" :temporary-redirect)))))))
+    (let [session (ds/find-by-key (get-in req [:session :identity]))]
+      (cond
+        (re-matches #"^/(login|authorise|oauth2callback)" (:uri req)) (handler req)
+        (nil? session) (no-session req)
+        :else (check-user handler req session)))))
 
 (defn add-auth [app-routes error-routes extra]
   (->
@@ -166,7 +183,7 @@
    auth-user
    ;no-cache
    (wrap-session {
-                  :store (cookie-store {:key "GV5Zt)Mu65>B%&V "})
+                  :store (cookie-store {:key "***REMOVED*** "})
                   :cookie-name "S"
                   :cookie-attrs (merge {:max-age 3600 :http-only true} extra)})))
 

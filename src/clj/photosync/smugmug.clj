@@ -22,9 +22,6 @@
 
 
 
-;; Create a Consumer, in this case one to access Twitter.
-;; Register an application at Twitter (https://dev.twitter.com/apps/new)
-;; to obtain a Consumer token and token secret.
 (def consumer (oauth/make-consumer "***REMOVED***"
                                    "***REMOVED***"
                                    "https://api.smugmug.com/services/oauth/1.0a/getRequestToken"
@@ -64,22 +61,6 @@
     (save-session-misc req {:smugmug_req_token request-token})
     (redirect redirect_uri :temporary-redirect)))
 
-; oauth_problem=parameter_absent
-;    &oauth_parameters_absent=
-; oauth_consumer_key
-; oauth_signature
-; oauth_signature_method
-; oauth_nonce
-; oauth_timestamp
-; ))
-
-
-;http://localhost:8080/smugmug_callback?oauth_token=gxhhncvVc6RdRbgHRSXpFZF4VZxgzMvp&Access=Full&Permissions=Read&oauth_verifier=027518
-
-
-; If user doesn't consent, redirect to a message
-; If user does consent, complete the flow
-;{:oauth_token 3tXVtxZLB6nXDqfCJRWR7TvfttsCDvSp, :oauth_token_secret vSjZstQjfCcfdHWshjkF6f5rzWR84ts3DZhPmW8nWcRZNbbLs5jnbpGhm74zpKt9}
 
 (def SMUG_HEADERS {"User-Agent" "PhotoSync.Net-Server"})
 (def SMUGMUG_USER "https://api.smugmug.com/api/v2!authuser")
@@ -209,23 +190,18 @@
                               {
                                :smugmug (:key smug)
                                :data (nippy/freeze updated-root)
+                               :remaining-nodes req-count
                                :owner guk})
      (response (str "OK - " @req-count " nodes have children to fetch")))))
 
-(defn albums-from-node
- [node]
- (filter (complement nil?) (map #(get-in % [:Uris :Album :Album]) (tree-seq :HasChildren :children node))))
 
 (defn view-smugmug-nodes
  [req]
  (let [session (get-session req)
        guk (:googleuser-key session)
        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))
-       albums (albums-from-node root-node)
-       na (count albums)
-       sum (apply + (map :OriginalSizes albums))]
-     (response (with-out-str (pp/pprint (cw/prewalk filter-nodes root-node))))))
+       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))]
+     (response (pr-str (cw/prewalk filter-nodes root-node)))))
      ;(response (with-out-str (pp/pprint root-node)))))
      ;(response (str na " albums, total: " (human/filesize sum)))))
 

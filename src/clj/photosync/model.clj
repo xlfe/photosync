@@ -12,6 +12,7 @@
 (h/defentity user-session
      [googleuser-key :type (ht/foreign-key :googleuser)]
      [misc :packer pr-str :unpacker read-string :default "nil"]
+     [last-uri]
      [created-at]) ; populated automaticaly
 
 (h/defentity google-user
@@ -30,20 +31,16 @@
 
 
 (h/defentity oauth-token
-            [__indexed :default [:owner :source]]
+            [__indexed :default [:owner :account-key :account-type]]
             [owner :type (ht/foreign-key :googleuser)]
+            [account-key]
+            [account-type]
             [created-at]
             [access_token]
             [refresh_token]
-            [source]
             [expires])
 
 
-(defn save-or-update-oauth
-  [details]
-  (if-let [record (first (h/find-by-kind :oauth-token :filters [[:= :owner (:owner details)][:= :source (:source details)]]))]
-    (:key (h/save (util/safe-merge record details)))
-    (:key (h/save {:kind :oauth-token} details))))
 
 (defn save-or-update
   [kind filters update]
@@ -88,6 +85,7 @@
  [owner :type (ht/foreign-key :googleuser)]
  [smugmug :type (ht/foreign-key :smug-user)]
  [updated-at]
+ [remaining-nodes]
  [data :type Blob])
 
 
