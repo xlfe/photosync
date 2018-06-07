@@ -108,7 +108,7 @@
               :source "smugmug"
               :refresh_token (:oauth_token_secret access-token-response)
               :expires nil}]
-      (models/save-or-update-oauth oauth)
+      (models/save-or-update :oauth-token [[:= :owner googleuser-key] [:= :source "smugmug"]] oauth)
       (save-session-misc req (dissoc session-misc :smugmug_req_token))
       (update-smuguser oauth)
       (redirect "/#services" :temporary-redirect)))

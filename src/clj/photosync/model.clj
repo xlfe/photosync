@@ -8,6 +8,12 @@
  (:import [com.google.appengine.api.datastore Blob]))
 
 
+; Login provider is Google - google-user is the owner of all records
+; oauth-token can refer to SmugMug and Google
+; One SmugMug account per google-user
+
+
+
 
 (h/defentity user-session
      [googleuser-key :type (ht/foreign-key :googleuser)]
@@ -31,13 +37,12 @@
 
 
 (h/defentity oauth-token
-            [__indexed :default [:owner :account-key :account-type]]
+            [__indexed :default [:owner :source]]
             [owner :type (ht/foreign-key :googleuser)]
-            [account-key]
-            [account-type]
             [created-at]
             [access_token]
             [refresh_token]
+            [source]
             [expires])
 
 
@@ -46,7 +51,7 @@
   [kind filters update]
   (if-let [record (first (h/find-by-kind kind :filters filters))]
     (:key (h/save (util/safe-merge record update)))
-    (:key (h/save {:kind kind } update))))
+    (:key (h/save {:kind kind} update))))
 
 ;access_token  The token that your application sends to authorize a Google API request.
 ;refresh_token  A token that you can use to obtain a new access token. Refresh tokens are valid until the user revokes access. Note that refresh tokens are always returned for installed applications.
@@ -62,7 +67,7 @@
 
 ; Populated from 	/api/v2/user/<NICKNAME>
 (h/defentity smug-user
- [owner :type (ht/foreign-key :googleuser)]
+ [owner :type (ht/foreign-key :google-user)]
  [AccountStatus]
  [FirstName]
  [ImageCount]
