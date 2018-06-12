@@ -68,6 +68,13 @@
 
 
 
+(defn menu-redirect [this key icon text uri]
+  (ui/menu-item {
+                 :onClick #(util/redirect! uri)
+                 :key key
+                 :leftIcon icon} text))
+
+
 (defn menu-click [this key icon text route]
  (ui/menu-item {
                 :onClick (fn [_]
@@ -75,6 +82,7 @@
                            (om/update-state! this assoc :drawer false))
                 :key key
                 :leftIcon icon} text))
+
 
 (defui ^:once Base
   static om/IQuery
@@ -155,7 +163,7 @@
                       :anchorOrigin {"horizontal" "middle" "vertical" "top"}
                       :targetOrigin {"horizontal" "right" "vertical" "bottom"}}
           (ui/menu
-            (menu-click this 1 (ic/image-photo-album) "SmugMug" :jobs)))))))
+            (menu-redirect this 1 (ic/image-photo-album) "SmugMug" "/getsmug")))))))
 
 (defui ^:once Jobs
   ;static om/IQuery
