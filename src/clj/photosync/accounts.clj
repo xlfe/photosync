@@ -61,9 +61,9 @@
 
 (defn get-valid-accounts
  [guk]
- (let [smugmug (smugmug-accounts guk)
+ (let [;smugmug (smugmug-accounts guk)
        tokens (ds/find-by-kind :oauth-token :filters [:= :owner guk])]
-  (log/info smugmug)
+  ;(log/info smugmug)
   (map #(select-keys % [:created-at :source :key]) tokens)))
 
 
