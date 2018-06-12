@@ -137,7 +137,7 @@
 (defui ^:once Services
   static om/IQuery
   (query [this]
-    '[(:services/list)])
+    '[:services/list])
   Object
   (render [this]
     (let [props (om/props this)
@@ -150,7 +150,7 @@
                   :id "fab-services"
                   :style    #js {
                                  :margin   "10px"
-                                 :position "absolute"
+                                 :position "fixed"
                                  :bottom   "10px"
                                  :right    "10px"}
                   :onClick (fn [_] (om/update-state! this assoc :menu-shown true))}
@@ -158,7 +158,7 @@
          (ui/popover {
                       :open (= menu-shown true)
                       :anchorEl (js/document.getElementById "fab-services")
-                      :canAutoPosition true
+                      :canAutoPosition false
                       :onRequestClose (fn [_] (om/update-state! this assoc :menu-shown false))
                       :anchorOrigin {"horizontal" "middle" "vertical" "top"}
                       :targetOrigin {"horizontal" "right" "vertical" "bottom"}}

@@ -80,11 +80,17 @@
       (str "error")))})
 
 
-(defmethod mutatef 'todo/delete
-  [{:keys [conn]} k {:keys [db/id]}]
-  {:value {:keys [:todos/list]}
+(defmethod mutatef 'services/delete
+  [{:keys [user-details]} k {:keys [key]}]
+  {:value {:keys [:services/list :services/by-id key]}
    :action
    (fn []
-     @(true conn [[:db.fn/retractEntity id]]))})
+     (if-let [record (ds/find-by-key key)]
+       (if (= (:key user-details) (:owner record))
+         (do
+           (log/warn (str "Deleting " key " at request of " (:email user-details)))
+           (ds/delete-by-key key)))))})
+
+
 
 

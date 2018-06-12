@@ -5,29 +5,17 @@
 ;; Reads
 
 (defmulti read om/dispatch)
+(def log (.-log js/console))
 
 (defmethod read :default
   [{:keys [state]} k _]
   (let [st @state] ;; CACHING!!!
+    (log "read " k)
     (if (contains? st k)
       {:value (get st k)}
       {:remote true})))
 
-;; work around for a bizarre :simple/:advanced bug
-;; circle back - David
-(defn join [st ref]
-  (cond-> (get-in st ref)
-    (= (:todos/editing st) ref) (assoc :todo/editing true)))
 
-(defn get-todos [st]
-  (into [] (map #(join st %)) (get st :todos/list)))
-
-(defmethod read :todos/list
-  [{:keys [state]} k _]
-  (let [st @state]
-    (if (contains? st k)
-      {:value (get-todos st)}
-      {:remote true})))
 
 ;; =============================================================================
 ;; Mutations
@@ -71,7 +59,9 @@
   {:value [:todos/list]
    :action (fn [] (swap! state assoc :todos/temp new-todo))})
 
-(defmethod mutate 'todos/delete-temp
-  [{:keys [state]} _ _]
-  {:value [:todos/list]
-   :action (fn [] (swap! state dissoc :todos/temp))})
+(defmethod mutate 'services/delete
+  [{:keys [state]} _ {:keys [key]}]
+  {:value {:keys [:services/by-id ]}
+   ;:remote true
+   :action (fn []
+               (swap! state assoc :services/list (doall (remove #(= (:key %) key) (:services/list @state)))))})

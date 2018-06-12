@@ -21,11 +21,13 @@
     (let [props (om/props this)]
       (ui/card
         (ui/card-header {:key 0 :title (:source props)})
-        (ui/card-text {:key 1} (str "Service linked: " (:created-at props)))
-
-        (ui/card-text {:key 2
-                       :onClick (fn [_] (om/transact! this `[(todo/delete {:db/id ~(:key props)})]))}
-                      "remove")))))
+        (ui/card-text {}
+                      (str "Service linked: " (:created-at props))
+                      (ic/action-delete { :key 2
+                                          :style {
+                                                  :cursor "pointer"
+                                                  :float "right"}
+                                          :onClick (fn [_] (om/transact! this `[(services/delete {:key ~(:key props)})]))}))))))
 
 (def service (om/factory Service {:keyfn :key}))
 
