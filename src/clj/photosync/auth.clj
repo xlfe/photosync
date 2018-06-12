@@ -130,7 +130,11 @@
   (log/info (:params (ring.middleware.params/params-request req)))
   (if-let [code (get (:params (ring.middleware.params/params-request req)) "code")]
     (google-complete-flow code)
-    (redirect "/login-failed")))
+    (if-let [error (get (:params (ring.middleware.params/params-request req)) "error")]
+      (if
+        (= error "immediate_failed")
+        (redirect "/authorise")
+        (redirect "/login-failed")))))
 
 
 
@@ -173,7 +177,7 @@
   (fn [req]
     (let [session (ds/find-by-key (get-in req [:session :identity]))]
       (cond
-        (re-matches #"^/(login|authorise|oauth2callback)" (:uri req)) (handler req)
+        (re-matches #"^/(login|authorise|oauth2callback|login-failed)" (:uri req)) (handler req)
         (nil? session) (no-session req)
         :else (check-user handler req session)))))
 
