@@ -9,8 +9,7 @@
 
 (defmethod read :default
   [{:keys [state]} k _]
-  (let [st @state] ;; CACHING!!!
-    (log "read " k)
+  (let [st @state]
     (if (contains? st k)
       {:value (get st k)}
       {:remote true})))
@@ -61,7 +60,15 @@
 
 (defmethod mutate 'services/delete
   [{:keys [state]} _ {:keys [key]}]
-  {:value {:keys [:services/by-id ]}
+  {
    ;:remote true
+   ; Why doesnt this work here?!
+   ; Todo: figure it out! why it doesn't work..
+   ;:value {:keys :services/list}
    :action (fn []
-               (swap! state assoc :services/list (doall (remove #(= (:key %) key) (:services/list @state)))))})
+             (let [st @state]
+               (swap! state update-in [:services/list]
+                  (fn [list]
+                    (into []
+                      (remove #(= (:key %) key))
+                      list)))))})

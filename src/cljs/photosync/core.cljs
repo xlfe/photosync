@@ -25,6 +25,7 @@
 
 (enable-console-print!)
 
+(def log (.-log js/console))
 (declare app)
 (def ^:once event-key (atom nil))
 (def ^:once history (Html5History.))
@@ -133,16 +134,16 @@
                ;:on-click #("blah")}
                (ic/content-add)))))
 
-
 (defui ^:once Services
   static om/IQuery
   (query [this]
-    '[:services/list])
+   ;[{:services/list (om/get-query services/Service)}]
+   '[:services/list])
   Object
   (render [this]
-    (let [props (om/props this)
+    (let [
           {:keys [menu-shown]} (om/get-state this)
-          {:keys [services/list]} props]
+          {:keys [services/list]} (om/props this)]
       (dom/div #js {:className "col-lg-6 col-sm-12"}
          (map services/service list)
          (ui/floating-action-button
@@ -236,7 +237,6 @@
      :send      (util/edn-post "/api")}))
 
 
-(def log (.-log js/console))
 
 (def app
   (compassus/application

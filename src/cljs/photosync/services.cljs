@@ -10,24 +10,27 @@
 (defui ^:once Service
   static om/Ident
   (ident [this {:keys [key]}]
-    [:services/by-id key])
+    [:service/by-key key])
 
   static om/IQuery
   (query [this]
-    '[:key])
+    [:key :created-at :source])
 
   Object
   (render [this]
-    (let [props (om/props this)]
+    (let [{:keys [key created-at source]} (om/props this)]
       (ui/card
-        (ui/card-header {:key 0 :title (:source props)})
+        (ui/card-header {:key 0 :title source})
         (ui/card-text {}
-                      (str "Service linked: " (:created-at props))
+                      (str "Service linked: " created-at)
                       (ic/action-delete { :key 2
                                           :style {
                                                   :cursor "pointer"
                                                   :float "right"}
-                                          :onClick (fn [_] (om/transact! this `[(services/delete {:key ~(:key props)})]))}))))))
+                                          :onClick (fn [_] (om/transact! this `[
+                                                                                (services/delete {:key ~key})
+                                                                                :services/list]))}))))))
 
 (def service (om/factory Service {:keyfn :key}))
+
 
