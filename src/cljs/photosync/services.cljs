@@ -6,6 +6,9 @@
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]))
 
+(def service-names {"google" "Google"
+                    "smugmug" "SmugMug"})
+
 
 (defui ^:once Service
   static om/Ident
@@ -20,7 +23,7 @@
   (render [this]
     (let [{:keys [key created-at source]} (om/props this)]
       (ui/card
-        (ui/card-header {:key 0 :title source})
+        (ui/card-header {:key 0 :title (get service-names source)})
         (ui/card-text {}
                       (str "Service linked: " created-at)
                       (ic/action-delete { :key 2

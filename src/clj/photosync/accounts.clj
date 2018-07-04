@@ -63,7 +63,6 @@
  [guk]
  (let [;smugmug (smugmug-accounts guk)
        tokens (ds/find-by-kind :oauth-token :filters [:= :owner guk])]
-  ;(log/info smugmug)
-  (map #(select-keys % [:created-at :source :key]) tokens)))
+    (map #(select-keys % [:created-at :source :key]) tokens)))
 
 

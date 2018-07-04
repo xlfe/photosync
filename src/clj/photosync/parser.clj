@@ -82,7 +82,7 @@
 
 (defmethod mutatef 'services/delete
   [{:keys [user-details]} k {:keys [key]}]
-  {:value {:keys [:services/list :services/by-id key]}
+  {:value {:keys [:services/by-id key]}
    :action
    (fn []
      (if-let [record (ds/find-by-key key)]

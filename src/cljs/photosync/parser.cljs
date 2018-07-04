@@ -61,7 +61,7 @@
 (defmethod mutate 'services/delete
   [{:keys [state]} _ {:keys [key]}]
   {
-   ;:remote true
+   :remote true
    ; Why doesnt this work here?!
    ; Todo: figure it out! why it doesn't work..
    ;:value {:keys :services/list}

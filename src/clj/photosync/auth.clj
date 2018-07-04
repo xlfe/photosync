@@ -105,10 +105,9 @@
          user-details (google-user-details access-token)
          googleuser-key (save-or-get-google-user user-details)
          token-key (models/save-or-update :oauth-token
-                                          [[:= :owner googleuser-key] [:= :account-key googleuser-key]]
+                                          [[:= :owner googleuser-key] [:= :source "google"]]
                                           {:owner googleuser-key
-                                           :account-key googleuser-key
-                                           :account-type "Google"
+                                           :source "google"
                                            :access_token access-token
                                            :refresh_token refresh-token
                                            :expires (java-date (plus (instant) (seconds expires)))})
