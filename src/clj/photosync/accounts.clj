@@ -50,12 +50,12 @@
          ;     :name (get % :NickName)
          ;     :uptodate false])))])
 
-(defn smugmug-accounts
- [guk]
-
- (let [tokens (ds/find-by-kind :oauth-token :filters [[:= :account-type "smugmug"] [:= :owner guk]])
-       accounts (ds/find-by-kind :smug-user :filters [:= :owner guk])]
-  (map #(proc-smugmug guk %) accounts)))
+(defn smugmug-account
+  "Find the smugmug account for this user"
+  [guk]
+  (let [tokens (ds/find-by-kind :oauth-token :filters [[:= :account-type "smugmug"] [:= :owner guk]])
+        accounts (ds/find-by-kind :smug-user :filters [:= :owner guk])]
+     (map #(proc-smugmug guk ) accounts)))
 
 
 
