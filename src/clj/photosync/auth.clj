@@ -188,5 +188,5 @@
    (wrap-session {
                   :store (cookie-store {:key "***REMOVED*** "})
                   :cookie-name "S"
-                  :cookie-attrs (merge {:max-age 3600 :http-only true} extra)})))
+                  :cookie-attrs (merge {:max-age (* 3600 24 2) :http-only true} extra)})))
 
