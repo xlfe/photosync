@@ -9,7 +9,7 @@
                  [org.clojure/core.async "0.3.443"]
                  [org.clojure/tools.logging "0.4.0"]
                  [org.clojure/core.match "0.3.0-alpha5"]
-                 [org.omcljs/om "1.0.0-beta2-SNAPSHOT" :exclusions [cljsjs/react cljsjs/react-dom]]
+                 [org.omcljs/om "1.0.0-beta4" :exclusions [cljsjs/react cljsjs/react-dom]]
                  [cljs-react-material-ui "0.2.50"]
                  [cljsjs/react "16.2.0-3"]
                  [cljsjs/react-dom "16.2.0-3"]
