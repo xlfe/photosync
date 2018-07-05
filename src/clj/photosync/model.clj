@@ -67,7 +67,7 @@
 
 ; Populated from 	/api/v2/user/<NICKNAME>
 (h/defentity smug-user
- [owner :type (ht/foreign-key :google-user)]
+ [owner :type (ht/foreign-key :oauth-token)]
  [AccountStatus]
  [FirstName]
  [ImageCount]
@@ -84,18 +84,15 @@
  [WebUri])
 
 
-
-
 (h/defentity smug-node
- [owner :type (ht/foreign-key :googleuser)]
- [smugmug :type (ht/foreign-key :smug-user)]
+ [owner :type (ht/foreign-key :oauth-token)]
  [updated-at]
  [remaining-nodes]
  [data :type Blob])
 
 
 (h/defentity SmugAlbum
- [owner :type (ht/foreign-key :googleuser)])
+ [owner :type (ht/foreign-key :oauth-token)])
 
 (h/defentity Image
- [owner :type (ht/foreign-key :googleuser)])
+ [owner :type (ht/foreign-key :oauth-token)])
