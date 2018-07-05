@@ -69,11 +69,16 @@
 
 
 
-(defn menu-redirect [this key icon text uri]
-  (ui/menu-item {
-                 :onClick #(util/redirect! uri)
-                 :key key
-                 :leftIcon icon} text))
+(defn menu-redirect
+  ([this key icon text uri]
+   (menu-redirect this key icon text uri false))
+  ([this key icon text uri disabled]
+   (ui/menu-item {
+                   :onClick #(util/redirect! uri)
+                   :key key
+                   :disabled disabled
+                   :leftIcon icon}
+                 text)))
 
 
 (defn menu-click [this key icon text route]
@@ -137,13 +142,14 @@
 (defui ^:once Services
   static om/IQuery
   (query [this]
-   ;[{:services/list (om/get-query services/Service)}]
-   '[:services/list])
+   [{:services/list (om/get-query services/Service)}])
+   ;'[:services/list])
   Object
   (render [this]
     (let [
           {:keys [menu-shown]} (om/get-state this)
-          {:keys [services/list]} (om/props this)]
+          {:keys [services/list]} (om/props this)
+          has-smugmug (not (empty? (filter #(= (:source %) "smugmug") list)))]
       (dom/div #js {:className "col-lg-6 col-sm-12"}
          (map services/service list)
          (ui/floating-action-button
@@ -164,7 +170,7 @@
                       :anchorOrigin {"horizontal" "middle" "vertical" "top"}
                       :targetOrigin {"horizontal" "right" "vertical" "bottom"}}
           (ui/menu
-            (menu-redirect this 1 (ic/image-photo-album) "SmugMug" "/getsmug")))))))
+            (menu-redirect this 1 (ic/image-photo-album) "SmugMug" "/getsmug" has-smugmug)))))))
 
 (defui ^:once Jobs
   ;static om/IQuery
