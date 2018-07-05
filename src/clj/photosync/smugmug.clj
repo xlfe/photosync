@@ -55,6 +55,7 @@
 
 
 (defn smugmug-redirect
+  "start the oauth flow for smugmug. Check the user doesn't already have a smugmug token"
   [req]
   (let [request-token (oauth/request-token consumer REDIRECT_URI)
         redirect_uri (oauth/user-approval-uri consumer (:oauth_token request-token) {:Access "Full" :Permissions "Read"})]
@@ -87,12 +88,22 @@
    (models/save-or-update :smug-user [:= :owner (:owner oauth)]
                           (merge
                             {:owner (:owner oauth)}
-                            {:bio-thumb (get-in bio-img [:BioImage :ThumbnailUrl])}
+                            {:bio-thumb (clojure.string/replace (get-in bio-img [:BioImage :ThumbnailUrl]) "/Th/" "/L/")}
                             {:node (get-in user-details [:User :Uris :Node :Uri])}
                             (:User user-details)))))
 
+(defn smugmug-remove
+  "remove all smugmug nodes based on google-user-key"
+  [guk]
+  (let [tokens (ds/find-by-kind :oauth-token :filters [[:= :owner guk] [:= :source "smugmug"]])
+        users (concat (map #(ds/find-by-kind :smug-user :filters [:= :owner (:key %)]) tokens))
+        nodes (concat (map #(ds/find-by-kind :smug-node :filters [:= :owner (:key %)]) tokens))]
+    (str (count tokens) " tokens, " (count users) " users and " (count nodes) " nodes found")))
+
+
 
 (defn smugmug-callback
+ "user has authenticated with smugmug so save the oauth-token with their guk as the owner"
  [req]
  (let [params (:params (ring.middleware.params/params-request req))
        session (get-session req)
@@ -117,11 +128,12 @@
 (defn smugmug-user
  [req]
  (let [session (get-session req)
-        guk (:googleuser-key session)]
+       guk (:googleuser-key session)]
    (do
-    (let [oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))]
-      (update-smuguser oauth))
-    (if-let [smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))]
+    ;(let [oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))]
+    ;  (update-smuguser oauth)
+    ;(if-let [smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))])
+    (if-let [smug (smugmug-remove guk)]
      (response (with-out-str (pp/pprint smug)))
      (response "not-found")))))
 
@@ -201,8 +213,9 @@
        guk (:googleuser-key session)
        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
        root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))]
-     (response (pr-str (cw/prewalk filter-nodes root-node)))))
+     ;(response (pr-str (cw/prewalk filter-nodes root-node)))))
      ;(response (with-out-str (pp/pprint root-node)))))
+     (response (with-out-str (pp/pprint smug)))))
      ;(response (str na " albums, total: " (human/filesize sum)))))
 
 
