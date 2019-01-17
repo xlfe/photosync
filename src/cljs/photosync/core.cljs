@@ -54,12 +54,12 @@
 
 (defn appbar [this title]
   (ui/app-bar {
-               :position "static"
-               :title title
-               :children []}))
-               ;:iconElementLeft (ui/icon-button {
-               ;                                  :className "menubutton"
-               ;                                  :onClick (fn [_] (om/update-state! this assoc :drawer true))
+               :position "static"}
+              (ui/toolbar {}
+                (ui/icon-button {:onClick (fn [_] (om/update-state! this assoc :drawer true))}
+                                (ic/menu))
+                (ui/typography {:variant "h6"} title))))
+               ;:iconElementLeft (ui/icon-button
                ;                  (ic/navigation-menu)}))
 
 (defn do-nav
@@ -68,6 +68,7 @@
   (set! (.-title js/document) ((route route-titles) nil)))
 
 
+(defn nav-button [destination text] (ui/button {:onClick (fn [_] (do-nav destination))} text))
 
 (defn menu-redirect
   ([this key icon text uri]
@@ -111,12 +112,13 @@
                                       (appbar this ((or ((compassus/current-route this) route-titles) (fn [_] (str "PhotoSync"))) user))
                                       (ui/drawer {
                                                   :onRequestChange (fn [_] (om/update-state! this assoc :drawer (false? drawer)))
-                                                  :docked          false :open (= true drawer)}
-                                                 (menu-click this 0 nil "PhotoSync" :welcome))
-                                                 ;(ui/divider)
-                                                 ;(menu-click this 1 (ic/notification-sync) "Sync Jobs" :jobs)
-                                                 ;(menu-click this 2 (ic/content-link) "Linked Services" :services)
-                                                 ;(menu-click this 3 (ic/action-credit-card) "Billing" :billing))
+                                                  ;:docked          false
+                                                  :open (= true drawer)}
+                                                 (menu-click this 0 nil "PhotoSync" :welcome)
+                                                 (ui/divider)
+                                                 (menu-click this 1 (ic/sync) "Sync Jobs" :jobs)
+                                                 (menu-click this 2 (ic/link) "Linked Services" :services)
+                                                 (menu-click this 3 (ic/credit-card) "Billing" :billing))
                                       (dom/div #js {:style {:padding "100px"}}
                                         (factory props)))))))
 
@@ -132,18 +134,18 @@
   (render [this]
     ;(let [props (om/props this)
     ;      {:keys [jobs/list user]} props
-    (dom/div nil
+    (dom/div nil)))
 
 
-             (ui/floating-action-button
-               {
-                :style    #js {
-                               :margin   "10px"
-                               :position "absolute"
-                               :bottom   "10px"
-                               :right    "10px"}}
-               ;:on-click #("blah")}
-               (ic/content-add)))))
+             ;(ui/floating-action-button
+             ;  {
+             ;   :style    #js {
+             ;                  :margin   "10px"
+             ;                  :position "absolute"
+             ;                  :bottom   "10px"
+             ;                  :right    "10px"
+             ;  :on-click #("blah")
+             ;  (ic/content-add))))
 
 (defui ^:once Services
   static om/IQuery
@@ -167,7 +169,7 @@
                                  :bottom   "10px"
                                  :right    "10px"}
                   :onClick (fn [_] (om/update-state! this assoc :menu-shown true))}
-                 (ic/content-add))
+                 (ic/add))
          (ui/popover {
                       :open (= menu-shown true)
                       :anchorEl (js/document.getElementById "fab-services")
@@ -176,7 +178,7 @@
                       :anchorOrigin {"horizontal" "middle" "vertical" "top"}
                       :targetOrigin {"horizontal" "right" "vertical" "bottom"}}
           (ui/menu
-            (menu-redirect this 1 (ic/image-photo-album) "SmugMug" "/getsmug" has-smugmug)))))))
+            (menu-redirect this 1 (ic/photo-album) "SmugMug" "/getsmug" has-smugmug)))))))
 
 (defui ^:once Jobs
   ;static om/IQuery
@@ -192,7 +194,7 @@
       (dom/div nil
 
 
-               (ui/floating-action-button
+               (ui/button
                  {
                   :style    #js {
                                  :margin   "10px"
@@ -200,11 +202,13 @@
                                  :bottom   "10px"
                                  :right    "10px"}}
                   ;:on-click #("blah")}
-                 (ic/content-add))))))
+                 (ic/add))))))
 
 
 (def yashica
  "https://lh3.googleusercontent.com/qx4Ni3XPOpQq0sp5MIB_9R3YTbTD8509l_f851Em7XzeXAYcV7NqhlwB5u8VFlFwgJLeuw94qZDZ6J51GDVg0YY=s1600")
+
+
 
 
 (defui ^:once Welcome
@@ -212,15 +216,20 @@
   (render [this]
       (dom/div #js {:className "col-lg-6 col-sm-12"}
             (ui/card
-              (ui/card-header {:title "Welcome to PhotoSync"}
-              ;(ui/card-media {:overlay (ui/card-title {:title "Relax" :subtitle "We're here to help"})}
-                (dom/img #js {:src yashica}))
-              ;(ui/card-title {:title "Let's get started" :subtitle "You'll be up and running in no time"})
-              ;(ui/card-text nil "A few easy steps")
-              (ui/card-actions nil)))))
-                 ;(ui/flat-button {:onClick (fn [_] (do-nav :services)) :label "1. Link a service"})
-                 ;(ui/flat-button {:onClick (fn [_] (do-nav :billing)) :label "2. Setup your billing details"})
-                 ;(ui/flat-button {:onClick (fn [_] (do-nav :jobs)) :label "3. Create a sync job"}))))))
+              (ui/card-header {:title "Welcome to PhotoSync"})
+              (ui/card-media
+                {:title "Relax"
+                 :image yashica
+                 :subtitle "We're here to help"})
+               ;(dom/img #js {:src yashica}))
+              (ui/card-content)
+                ;(dom/h6 {:title "Let's get started" :subtitle "You'll be up and running in no time"})
+                ;(ui/card-text nil "A few easy steps")
+
+              (ui/card-actions
+                (nav-button :service "1. Link a service")
+                (nav-button :billing "2. Setup your billing details")
+                (nav-button :jobs "3. Create a sync job"))))))
 
 
 
@@ -232,8 +241,8 @@
       {
        :actions
               [
-               (ui/flat-button {:label "Cancel" :primary false :onClick #(util/redirect! "https://google.com")})
-               (ui/flat-button {:label "Login" :primary true :onClick #(util/redirect! "/login")})]
+               (ui/button {:label "Cancel" :primary false :onClick #(util/redirect! "https://google.com")})
+               (ui/button {:label "Login" :primary true :onClick #(util/redirect! "/login")})]
        :open  true :modal true
        :title "Session Expired"}
       "Your session has expired - please login again.")))
