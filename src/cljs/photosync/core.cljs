@@ -1,10 +1,8 @@
 (ns photosync.core
   (:require [goog.events :as events]
             [goog.dom :as gdom]
-            [cljsjs.material-ui]                            ; I recommend adding this at the beginning of core file
-    ;  so React is always loaded first. It's not always needed
-            [cljs-react-material-ui.core :as ui]
-            [cljs-react-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
+            [cljs-material-ui.core :as ui]
+            [cljs-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]
 
@@ -56,11 +54,13 @@
 
 (defn appbar [this title]
   (ui/app-bar {
+               :position "static"
                :title title
-               :iconElementLeft (ui/icon-button {
-                                                 :className "menubutton"
-                                                 :onClick (fn [_] (om/update-state! this assoc :drawer true))}
-                                 (ic/navigation-menu))}))
+               :children []}))
+               ;:iconElementLeft (ui/icon-button {
+               ;                                  :className "menubutton"
+               ;                                  :onClick (fn [_] (om/update-state! this assoc :drawer true))
+               ;                  (ic/navigation-menu)}))
 
 (defn do-nav
   [route]
@@ -100,17 +100,23 @@
           {:keys [user]} (om/props this)
           {:keys [drawer]} (om/get-state this)]
       (ui/mui-theme-provider {
-                              :mui-theme (ui/get-mui-theme {:palette {:primary1-color (ui/color :deep-orange-500)}})}
+                              :theme (ui/get-mui-theme
+                                       {
+                                        :typography {:use-next-variants true}
+                                        :palette
+                                        {:primary
+                                         {:main
+                                          (ui/color :deep-orange :500)}}})}
                              (dom/div nil
                                       (appbar this ((or ((compassus/current-route this) route-titles) (fn [_] (str "PhotoSync"))) user))
                                       (ui/drawer {
                                                   :onRequestChange (fn [_] (om/update-state! this assoc :drawer (false? drawer)))
                                                   :docked          false :open (= true drawer)}
-                                                 (menu-click this 0 nil "PhotoSync" :welcome)
-                                                 (ui/divider)
-                                                 (menu-click this 1 (ic/notification-sync) "Sync Jobs" :jobs)
-                                                 (menu-click this 2 (ic/content-link) "Linked Services" :services)
-                                                 (menu-click this 3 (ic/action-credit-card) "Billing" :billing))
+                                                 (menu-click this 0 nil "PhotoSync" :welcome))
+                                                 ;(ui/divider)
+                                                 ;(menu-click this 1 (ic/notification-sync) "Sync Jobs" :jobs)
+                                                 ;(menu-click this 2 (ic/content-link) "Linked Services" :services)
+                                                 ;(menu-click this 3 (ic/action-credit-card) "Billing" :billing))
                                       (dom/div #js {:style {:padding "100px"}}
                                         (factory props)))))))
 
@@ -152,7 +158,7 @@
           has-smugmug (not (empty? (filter #(= (:source %) "smugmug") list)))]
       (dom/div #js {:className "col-lg-6 col-sm-12"}
          (map services/service list)
-         (ui/floating-action-button
+         (ui/button
                  {
                   :id "fab-services"
                   :style    #js {
@@ -206,15 +212,15 @@
   (render [this]
       (dom/div #js {:className "col-lg-6 col-sm-12"}
             (ui/card
-              (ui/card-header {:title "Welcome to PhotoSync"})
-              (ui/card-media {:overlay (ui/card-title {:title "Relax" :subtitle "We're here to help"})}
+              (ui/card-header {:title "Welcome to PhotoSync"}
+              ;(ui/card-media {:overlay (ui/card-title {:title "Relax" :subtitle "We're here to help"})}
                 (dom/img #js {:src yashica}))
-              (ui/card-title {:title "Let's get started" :subtitle "You'll be up and running in no time"})
-              (ui/card-text nil "A few easy steps")
-              (ui/card-actions nil
-                 (ui/flat-button {:onClick (fn [_] (do-nav :services)) :label "1. Link a service"})
-                 (ui/flat-button {:onClick (fn [_] (do-nav :billing)) :label "2. Setup your billing details"})
-                 (ui/flat-button {:onClick (fn [_] (do-nav :jobs)) :label "3. Create a sync job"}))))))
+              ;(ui/card-title {:title "Let's get started" :subtitle "You'll be up and running in no time"})
+              ;(ui/card-text nil "A few easy steps")
+              (ui/card-actions nil)))))
+                 ;(ui/flat-button {:onClick (fn [_] (do-nav :services)) :label "1. Link a service"})
+                 ;(ui/flat-button {:onClick (fn [_] (do-nav :billing)) :label "2. Setup your billing details"})
+                 ;(ui/flat-button {:onClick (fn [_] (do-nav :jobs)) :label "3. Create a sync job"}))))))
 
 
 

@@ -1,8 +1,7 @@
 (ns photosync.services
   (:require
-            [cljsjs.material-ui]
-            [cljs-react-material-ui.core :as ui]
-            [cljs-react-material-ui.icons :as ic]
+            [cljs-material-ui.core :as ui]
+            [cljs-material-ui.icons :as ic]
             [clojure.contrib.humanize :as humanize]
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]))

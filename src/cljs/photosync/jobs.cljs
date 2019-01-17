@@ -1,9 +1,7 @@
 (ns photosync.jobs
   (:require [clojure.string :as string]
-            [cljsjs.material-ui]                            ; I recommend adding this at the beginning of core file
-    ;  so React is always loaded first. It's not always needed
-            [cljs-react-material-ui.core :as ui]
-            [cljs-react-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
+            [cljs-material-ui.core :as ui]
+            [cljs-material-ui.icons :as ic]           ; SVG icons that comes with MaterialUI
             [om.next :as om :refer-macros [defui]]
             [om.dom :as dom]
             [photosync.util :refer [hidden pluralize]]))
