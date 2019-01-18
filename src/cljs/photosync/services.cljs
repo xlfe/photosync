@@ -24,15 +24,17 @@
     (let [{:keys [key created-at source]} (om/props this)]
       (ui/card
         (ui/card-header {:title (get service-names source)})
-        (ui/card-media {:overlay (ui/card-title {:title "Relax" :subtitle "We're here to help"})})
-                       ;(dom/img #js {:src yashica}))
-        (ui/card-title
-          {:subtitle (str created-at)
-           :title (str "Account linked " (humanize/datetime created-at))})
+        ;(ui/card-media {:overlay (ui/card-title {:title "Relax" :subtitle "We're here to help"})})
+                      ;(dom/img #js {:src yashica}))
+        ;(ui/card-title
+        ;  {:subtitle (str created-at)
+        ;   :title (str "Account linked " (humanize/datetime created-at)))
         (ui/card-actions nil
-                                       (ui/flat-button
-                                         {:onClick (fn [_] (om/transact! this `[(services/delete {:key ~key} :services/list)]))
-                                          :label "Unlink service"}))))))
+                         (ui/button
+                           {
+                            :variant "text"
+                            :onClick (fn [_] (om/transact! this `[(services/delete {:key ~key} :services/list)]))}
+                           "Unlink service"))))))
 
 
 (def service (om/factory Service {:keyfn :key}))

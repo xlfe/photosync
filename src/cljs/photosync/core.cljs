@@ -71,24 +71,22 @@
 (defn nav-button [destination text] (ui/button {:onClick (fn [_] (do-nav destination))} text))
 
 (defn menu-redirect
-  ([this key icon text uri]
-   (menu-redirect this key icon text uri false))
-  ([this key icon text uri disabled]
-   (ui/menu-item {
-                   :onClick #(util/redirect! uri)
-                   :key key
-                   :disabled disabled
-                   :leftIcon icon}
-                 text)))
+  ([icon text uri]
+   (menu-redirect icon text uri false))
+  ([icon text uri disabled]
+   (ui/menu-item {:onClick #(util/redirect! uri) :disabled (= true disabled)}
+                 (ui/list-item-icon icon)
+                 (ui/list-item-text text))))
 
 
-(defn menu-click [this key icon text route]
+(defn menu-click [this icon text route]
  (ui/menu-item {
                 :onClick (fn [_]
                            (do-nav route)
-                           (om/update-state! this assoc :drawer false))
-                :key key
-                :leftIcon icon} text))
+                           (om/update-state! this assoc :drawer false))}
+               (ui/list-item-icon icon)
+               (ui/list-item-text text)))
+
 
 
 (defui ^:once Base
@@ -111,17 +109,22 @@
                              (dom/div nil
                                       (appbar this ((or ((compassus/current-route this) route-titles) (fn [_] (str "PhotoSync"))) user))
                                       (ui/drawer {
-                                                  :onRequestChange (fn [_] (om/update-state! this assoc :drawer (false? drawer)))
+                                                  :onClose (fn [_] (om/update-state! this assoc :drawer false))
                                                   ;:docked          false
                                                   :open (= true drawer)}
-                                                 (menu-click this 0 nil "PhotoSync" :welcome)
+                                                 (menu-click this (ic/blur-circular) "PhotoSync" :welcome)
                                                  (ui/divider)
-                                                 (menu-click this 1 (ic/sync) "Sync Jobs" :jobs)
-                                                 (menu-click this 2 (ic/link) "Linked Services" :services)
-                                                 (menu-click this 3 (ic/credit-card) "Billing" :billing))
+                                                 (menu-click this (ic/sync) "Sync Jobs" :jobs)
+                                                 (menu-click this (ic/link) "Linked Services" :services)
+                                                 (menu-click this (ic/credit-card) "Billing" :billing))
                                       (dom/div #js {:style {:padding "100px"}}
                                         (factory props)))))))
 
+(def fab-props
+  {
+   :variant "fab"
+   :color "primary"
+   :style #js {:position "absolute"  :left "1em" :bottom   "1em"}})
 
 (defui ^:once Billing
   ;static om/IQuery
@@ -134,18 +137,11 @@
   (render [this]
     ;(let [props (om/props this)
     ;      {:keys [jobs/list user]} props
-    (dom/div nil)))
-
-
-             ;(ui/floating-action-button
-             ;  {
-             ;   :style    #js {
-             ;                  :margin   "10px"
-             ;                  :position "absolute"
-             ;                  :bottom   "10px"
-             ;                  :right    "10px"
-             ;  :on-click #("blah")
-             ;  (ic/content-add))))
+    (dom/div nil
+             (ui/button
+               (merge fab-props
+                      {:on-click #("blah")})
+               (ic/add)))))
 
 (defui ^:once Services
   static om/IQuery
@@ -160,25 +156,20 @@
           has-smugmug (not (empty? (filter #(= (:source %) "smugmug") list)))]
       (dom/div #js {:className "col-lg-6 col-sm-12"}
          (map services/service list)
-         (ui/button
-                 {
-                  :id "fab-services"
-                  :style    #js {
-                                 :margin   "10px"
-                                 :position "fixed"
-                                 :bottom   "10px"
-                                 :right    "10px"}
-                  :onClick (fn [_] (om/update-state! this assoc :menu-shown true))}
+         (ui/button (merge fab-props
+                      {
+                       :id "fab-services"
+                       :onClick (fn [_] (om/update-state! this assoc :menu-shown true))})
                  (ic/add))
          (ui/popover {
                       :open (= menu-shown true)
                       :anchorEl (js/document.getElementById "fab-services")
-                      :canAutoPosition false
-                      :onRequestClose (fn [_] (om/update-state! this assoc :menu-shown false))
-                      :anchorOrigin {"horizontal" "middle" "vertical" "top"}
-                      :targetOrigin {"horizontal" "right" "vertical" "bottom"}}
-          (ui/menu
-            (menu-redirect this 1 (ic/photo-album) "SmugMug" "/getsmug" has-smugmug)))))))
+                      :anchorReference "anchorEl"
+                      :onClose (fn [_] (om/update-state! this assoc :menu-shown false))
+                      :anchorOrigin {:horizontal "right" :vertical "top"}}
+          (ui/menu-list
+            {:open menu-shown}
+            (menu-redirect (ic/photo-album) "SmugMug" "/getsmug" has-smugmug)))))))
 
 (defui ^:once Jobs
   ;static om/IQuery
@@ -192,17 +183,11 @@
     (let [props (om/props this)
           {:keys [jobs/list user]} props]
       (dom/div nil
+               (ui/button (merge fab-props
+                                 {:id "fab-services"
+                                  :onClick (fn [_] (om/update-state! this assoc :menu-shown true))})
+                          (ic/add))))))
 
-
-               (ui/button
-                 {
-                  :style    #js {
-                                 :margin   "10px"
-                                 :position "absolute"
-                                 :bottom   "10px"
-                                 :right    "10px"}}
-                  ;:on-click #("blah")}
-                 (ic/add))))))
 
 
 (def yashica
@@ -227,7 +212,7 @@
                 ;(ui/card-text nil "A few easy steps")
 
               (ui/card-actions
-                (nav-button :service "1. Link a service")
+                (nav-button :services "1. Link a service")
                 (nav-button :billing "2. Setup your billing details")
                 (nav-button :jobs "3. Create a sync job"))))))
 
