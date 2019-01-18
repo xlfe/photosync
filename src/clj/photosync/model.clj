@@ -85,7 +85,7 @@
 
 
 (h/defentity smug-node
- [owner :type (ht/foreign-key :oauth-token)]
+ [owner :type (ht/foreign-key :smug-user)]
  [updated-at]
  [remaining-nodes]
  [data :type Blob])

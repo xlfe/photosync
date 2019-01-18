@@ -72,9 +72,12 @@
    (smug-request oauth uri method nil))
   ([oauth uri method request-params]
    (do
+    (log/info uri request-params)
     (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri request-params)
           resp (http/request {:method (name method) :accept :json :headers SMUG_HEADERS :url uri :query-params (merge creds request-params)})
           rl-remain (get-in resp [:headers :X-RateLimit-Remaining])]
+     (log/info (:status resp))
+     (log/info (get (:headers resp) "Content-Type"))
      (do
        (log/info (str "Calls remaining: " rl-remain))
        (:Response (parse/parse-string (:body resp) true)))))))
@@ -144,12 +147,11 @@
         oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
         smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
         root-node (select-keys (:Node (smug-request oauth (walk/NODE_URI (:node smug)) :GET walk/ROOT_NODE_PARAMS)) walk/NODE_KEYS)]
-    (do
-      (models/save-or-update :smug-node [[:= :owner guk] [:= :smugmug (:key smug)]]
-                             {
-                              :smugmug (:key smug)
-                              :data (nippy/freeze root-node)
-                              :owner guk})
+    (let
+        [saved (models/save-or-update :smug-node [:= :smugmug (:key smug)]
+                                      {
+                                       :owner (:key smug)
+                                       :data (nippy/freeze root-node)})]
       (response (with-out-str (pp/pprint root-node))))))
 
 (defn needs-fetching
@@ -180,6 +182,11 @@
    {:largest_image (get-in img [:Uris :LargestImage :LargestImage :Url])
     :thumb_image   (get-in img [:ThumbnailUrl])}))
 
+(defn albums-from-node
+  [node]
+  (filter (complement nil?) (map #(get-in % [:Uris :Album :Album]) (tree-seq :HasChildren :children node))))
+
+
 (defn filter-nodes
  [node]
  (cond
@@ -194,17 +201,29 @@
        guk (:googleuser-key session)
        oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-       start-root (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))
+       smug-images (:ImageCount smug)
+       smug-key (:key smug)
        req-count (atom 0)
-       updated-root (cw/postwalk (partial update-if-req req-count oauth) start-root)]
-   (do
-     (models/save-or-update :smug-node [[:= :owner guk] [:= :smugmug (:key smug)]]
-                              {
-                               :smugmug (:key smug)
-                               :data (nippy/freeze updated-root)
-                               :remaining-nodes req-count
-                               :owner guk})
-     (response (str "OK - " @req-count " nodes have children to fetch")))))
+       node (first (ds/find-by-kind :smug-node :filters [:= :owner smug-key]))]
+   (if-let [data (:data node)]
+     (let [start-root (nippy/thaw data)
+           updated-root (cw/postwalk (partial update-if-req req-count oauth) start-root)
+           albums (albums-from-node updated-root)
+           na (count albums)
+           sum (human/filesize (apply + (map :OriginalSizes albums)))
+           photo-count (apply + (map :ImageCount albums))
+           proportion (format "%3f" (float (/ photo-count smug-images)))]
+       (do
+         (models/save-or-update :smug-node [:= :owner smug-key]
+                                   {
+                                    :data (nippy/freeze updated-root)
+                                    :remaining-nodes @req-count
+                                    :owner smug-key})
+         (response (str "OK " proportion " - " @req-count
+                        " nodes have children to fetch. Info for "
+                        na " albums fetched (with a total storage usage of "
+                        sum ") and " photo-count " photos."))))
+     (response (with-out-str (pp/pprint node))))))
 
 
 (defn view-smugmug-nodes
@@ -212,10 +231,13 @@
  (let [session (get-session req)
        guk (:googleuser-key session)
        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [[:= :owner guk] [:= :smugmug (:key smug)]]))))]
+       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [:= :owner (:key smug)]))))]
+     (log/debug guk)
+     (log/debug smug)
      ;(response (pr-str (cw/prewalk filter-nodes root-node)))))
-     ;(response (with-out-str (pp/pprint root-node)))))
-     (response (with-out-str (pp/pprint smug)))))
+     (response (with-out-str (pp/pprint root-node)))))
+     ;(response (with-out-str (pp/pprint smug)))))
+     ;(response (with-out-str (pp/pprint smug)))))
      ;(response (str na " albums, total: " (human/filesize sum)))))
 
 
