@@ -16,6 +16,7 @@
             [clojure.contrib.humanize :as human]
             [photosync.model :as models]
             [photosync.util :as util]
+            [photosync.deferred :as deferred]
             [photosync.walk :as walk]
             [oauth.client :as oauth])
   (:import (com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value)))
@@ -196,6 +197,36 @@
    :else node))
 
 (defn update-smugmug-nodes
+  [req]
+  (let [session (get-session req)
+        guk (:googleuser-key session)
+        oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
+        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
+        smug-images (:ImageCount smug)
+        smug-key (:key smug)
+        req-count (atom 0)
+        node (first (ds/find-by-kind :smug-node :filters [:= :owner smug-key]))]
+    (if-let [data (:data node)]
+      (let [start-root (nippy/thaw data)
+            updated-root (cw/postwalk (partial update-if-req req-count oauth) start-root)
+            albums (albums-from-node updated-root)
+            na (count albums)
+            sum (human/filesize (apply + (map :OriginalSizes albums)))
+            photo-count (apply + (map :ImageCount albums))
+            proportion (format "%3f" (float (/ photo-count smug-images)))]
+        (do
+          (models/save-or-update :smug-node [:= :owner smug-key]
+                                  {}
+                                   :data (nippy/freeze updated-root)
+                                   :remaining-nodes @req-count
+                                   :owner smug-key)
+          (response (str "OK " proportion " - " @req-count
+                         " nodes have children to fetch. Info for "
+                         na " albums fetched (with a total storage usage of "
+                         sum ") and " photo-count " photos."))))
+      (response (with-out-str (pp/pprint node))))))
+
+(defn update-smugmug-nodes
  [req]
  (let [session (get-session req)
        guk (:googleuser-key session)
@@ -235,8 +266,8 @@
      (log/debug guk)
      (log/debug smug)
      ;(response (pr-str (cw/prewalk filter-nodes root-node)))))
-     (response (with-out-str (pp/pprint root-node)))))
-     ;(response (with-out-str (pp/pprint smug)))))
+     ;(response (with-out-str (pp/pprint root-node)))))
+     (response (with-out-str (pp/pprint smug)))))
      ;(response (with-out-str (pp/pprint smug)))))
      ;(response (str na " albums, total: " (human/filesize sum)))))
 

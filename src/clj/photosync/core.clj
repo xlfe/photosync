@@ -1,6 +1,6 @@
 (ns photosync.core
   (:require
-    [compojure.core :refer [defroutes routes ANY GET POST]]
+    [compojure.core :refer [defroutes routes ANY GET POST wrap-routes]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.middleware.ssl :refer [wrap-hsts]]
     [clojure.walk :as walk]
@@ -53,7 +53,7 @@
   (not (= nil (get-in req [:request :user-details]))))
 
 (defresource
-  api-resource
+  user-api-resource
   :available-media-types ["application/edn"]
   :authorized? check-session
   :allowed-methods [:get :post]
@@ -62,28 +62,37 @@
   :respond-with-entity? true
   :handle-ok (fn [ctx]
                  (prn-str (::data ctx))))
-                 ;(prn-str (merge {:compassus.core/route :index} (::data ctx)))))
 
 (def resource-root {:root "public"})
 
-(defroutes app-routes
-     (ANY "/api" [] api-resource)
+(defroutes user-routes
+     (ANY "/api" [] user-api-resource)
      (GET  "/" [] (resource-response "html/index.html" resource-root))
      (route/resources "/" resource-root))
 
 (defroutes error-routes
    (route/not-found (resource-response "html/404.html" resource-root)))
 
-(def prod-handler
-  (-> (routes app-routes cron/cron-routes smugmug/smug-routes)
-      wrap-hsts         ; HTTP Strict Transport Security
+(def core-handler
+  (-> (routes
+        auth/auth-routes
+        (-> user-routes
+            (wrap-routes auth/auth-user))
+        error-routes)
+      auth/cookie-wrap
       wrap-params       ; parse urlencoded parameters from the query string and form body
-      parse-edn-body
-      (auth/add-auth error-routes {:secure true})))     ; authentication using cookies and google user details
+      parse-edn-body))
+
+(def prod-handler
+  (-> core-handler
+      wrap-reload
+      wrap-hsts))         ; HTTP Strict Transport Security
 
 (def dev-handler
-  (-> (routes app-routes cron/cron-routes smugmug/smug-routes)
-      wrap-params
-      parse-edn-body
-      (auth/add-auth error-routes {:secure false})     ; authentication using cookies and google user details
-      wrap-reload)) ; add hot reload
+  (-> (routes
+        cron/cron-routes
+        smugmug/smug-routes
+        core-handler)
+      wrap-reload))
+
+

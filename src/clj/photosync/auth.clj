@@ -176,17 +176,13 @@
   (fn [req]
     (let [session (ds/find-by-key (get-in req [:session :identity]))]
       (cond
-        (re-matches #"^/(login|authorise|oauth2callback|login-failed)" (:uri req)) (handler req)
+        ;(re-matches #"^/(login|authorise|oauth2callback|login-failed)" (:uri req)) (handler req)
         (nil? session) (no-session req)
         :else (check-user handler req session)))))
 
-(defn add-auth [app-routes error-routes extra]
-  (->
-   (compojure.core/routes app-routes auth-routes error-routes)
-   auth-user
-   ;no-cache
-   (wrap-session {
-                  :store (cookie-store {:key "***REMOVED*** "})
-                  :cookie-name "S"
-                  :cookie-attrs (merge {:max-age (* 3600 24 2) :http-only true} extra)})))
+(defn cookie-wrap [handler]
+  (wrap-session handler {
+                         :store (cookie-store {:key "***REMOVED*** "})
+                         :cookie-name "S"
+                         :cookie-attrs (merge {:max-age (* 3600 24 2) :http-only true})}))
 
