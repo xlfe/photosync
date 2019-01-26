@@ -6,13 +6,15 @@
   (:import [com.google.cloud.logging
             Logging
             LoggingOptions
+            MonitoredResource
             LogEntry
             LogEntry$Builder
             Severity
             Payload$StringPayload
             Payload$JsonPayload
             Logging$WriteOption]
-           [com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value]))
+           [com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value]
+           [com.google.cloud MonitoredResource]))
 
 
 
@@ -37,8 +39,13 @@
   [level & more]
   (let [entries (map #(make-log-entry level %) more)]
     (if PRODUCTION
-      (.write (.getService (LoggingOptions/getDefaultInstance)) entries (into-array [(Logging$WriteOption/logName "test")]))
-      (log/info (map str entries)))))
+      (.write (.getService (LoggingOptions/getDefaultInstance))
+              entries
+              (into-array [
+                           (Logging$WriteOption/logName "test")
+                           (Logging$WriteOption/resource (.build (.newBuilder MonitoredResource "global")))])));
+
+    (log/info (map str entries))))
       ;(log/info (map str entries)))))
 
 (defmacro info
