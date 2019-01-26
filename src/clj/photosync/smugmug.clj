@@ -121,7 +121,7 @@
         guk (:googleuser-key session)
         oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
         smug (first (ds/find-by-kind :smug-user :filters [:= :owner (:key oauth)]))]
-    (log/info "test")
+    (log/info {:test 1} "logging from test-display-smugmug-user")
     (if smug
       (response (with-out-str (pp/pprint smug)))
       (response "not-found"))))

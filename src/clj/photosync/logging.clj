@@ -1,37 +1,45 @@
 (ns photosync.logging
   (:require
     [clojure.tools.logging :as log]
+    [clojure.walk :as walk]
     [cheshire.core :as json])
   (:import [com.google.cloud.logging
             Logging
+            LoggingOptions
             LogEntry
             LogEntry$Builder
             Severity
             Payload$StringPayload
             Payload$JsonPayload
-            Logging$WriteOption]))
+            Logging$WriteOption]
+           [com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value]))
 
 
 
+(def PRODUCTION
+  (= (.value SystemProperty/environment) (SystemProperty$Environment$Value/Production)))
 
-(defn log-entry
- [entry]
- (cond
-   (instance? String entry) (.of LogEntry (.of Payload$StringPayload entry))
-   (instance? map entry) (.of LogEntry (.of Payload$JsonPayload (json/encode entry)))))
 
-(defn set-log-level
- [level entries]
- (map #(doto (.toBuilder %)
-         (.setSeverity level)
-         (.build))
-      entries))
+(defn make-log-entry
+ [level entry]
+ (let [payload (cond
+                 ;(instance? String entry) (Payload$StringPayload/of entry)
+                 (instance? java.util.Map entry) (Payload$JsonPayload/of (walk/stringify-keys entry))
+                 :else (Payload$StringPayload/of entry))
+       le (LogEntry/newBuilder payload)]
+   (.setSeverity le level)
+   (.build le)))
+
+
+
 
 (defn log
-  "logs a message"
   [level & more]
-  (.Logging write (set-log-level level (map log-entry more))
-                   (. Logging$WriteOption logName "test")))
+  (let [entries (map #(make-log-entry level %) more)]
+    (if PRODUCTION
+      (.write (.getService (LoggingOptions/getDefaultInstance)) entries (into-array [(Logging$WriteOption/logName "test")]))
+      (log/info (map str entries)))))
+      ;(log/info (map str entries)))))
 
 (defmacro info
   [& args]

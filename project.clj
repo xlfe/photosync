@@ -30,8 +30,12 @@
                  [hyperion/hyperion-gae "3.7.2-SNAPSHOT"]
 
                  [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
-                 [com.google.api-client/google-api-client "1.23.0"]
-                 [com.google.cloud/google-cloud-logging "1.61.0"]
+                 [com.google.api-client/google-api-client "1.28.0"]
+                 [com.google.cloud/google-cloud-logging "1.61.0" :exclusions [io.grpc/grpc-core]]
+                 [com.google.protobuf/protobuf-java "3.6.1"]
+                 [io.grpc/grpc-netty-shaded "1.18.0" :exclusions [io.grpc/grpc-core]]
+                 [io.grpc/grpc-protobuf "1.18.0"]
+                 [io.grpc/grpc-stub "1.18.0"]
 
                  [liberator "0.15.1"]
                  [compojure "1.6.0"]]
