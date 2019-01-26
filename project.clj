@@ -1,4 +1,4 @@
-(def appengine-version "1.9.63")
+(def appengine-version "1.9.71")
 
 (defproject photosync "0.0.1-SNAPSHOT"
 

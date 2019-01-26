@@ -140,7 +140,7 @@
     (dom/div nil
              (ui/button
                (merge fab-props
-                      {:on-click #("blah")})
+                      {})
                (ic/add)))))
 
 (defui ^:once Services
