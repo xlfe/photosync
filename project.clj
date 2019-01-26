@@ -31,6 +31,8 @@
 
                  [com.google.appengine/appengine-api-1.0-sdk ~appengine-version]
                  [com.google.api-client/google-api-client "1.23.0"]
+                 [com.google.cloud/google-cloud-logging "1.61.0"]
+
                  [liberator "0.15.1"]
                  [compojure "1.6.0"]]
 

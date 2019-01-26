@@ -1,7 +1,6 @@
 (ns photosync.smugmug
   (:use compojure.core)
   (:require [clj-http.client :as http]
-            [clojure.tools.logging :as log]
             [clojure.pprint :as pp]
             [clojure.walk :as cw]
 
@@ -16,6 +15,7 @@
             [clojure.contrib.humanize :as human]
             [photosync.model :as models]
             [photosync.util :as util]
+            [photosync.logging :as log]
             [photosync.deferred :as deferred]
             [photosync.walk :as walk]
             [oauth.client :as oauth])
@@ -121,7 +121,8 @@
         guk (:googleuser-key session)
         oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
         smug (first (ds/find-by-kind :smug-user :filters [:= :owner (:key oauth)]))]
-     (if smug
+    (log/info "test")
+    (if smug
       (response (with-out-str (pp/pprint smug)))
       (response "not-found"))))
 
