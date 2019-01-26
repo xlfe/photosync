@@ -52,9 +52,6 @@
   (let [session-key (get-in req [:session :identity])]
     (ds/find-by-key session-key)))
 
-
-
-
 (defn smugmug-redirect
   "start the oauth flow for smugmug. Check the user doesn't already have a smugmug token"
   [req]
@@ -73,7 +70,7 @@
    (smug-request oauth uri method nil))
   ([oauth uri method request-params]
    (do
-    (log/info uri request-params)
+    (log/info (str "smug-request called for url " uri " with request params: " request-params " and oauth " (:key oauth)))
     (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri request-params)
           resp (http/request {:method (name method) :accept :json :headers SMUG_HEADERS :url uri :query-params (merge creds request-params)})
           rl-remain (get-in resp [:headers :X-RateLimit-Remaining])]
@@ -82,19 +79,6 @@
      (do
        (log/info (str "Calls remaining: " rl-remain))
        (:Response (parse/parse-string (:body resp) true)))))))
-
-
-(defn update-smuguser
- [oauth]
- (let [user-details (smug-request oauth SMUGMUG_USER :GET)
-       username (get-in user-details [:User :Name])
-       bio-img (smug-request oauth (USER_EP username "bioimage" ) :GET)]
-   (models/save-or-update :smug-user [:= :owner (:owner oauth)]
-                          (merge
-                            {:owner (:owner oauth)}
-                            {:bio-thumb (clojure.string/replace (get-in bio-img [:BioImage :ThumbnailUrl]) "/Th/" "/L/")}
-                            {:node (get-in user-details [:User :Uris :Node :Uri])}
-                            (:User user-details)))))
 
 (defn smugmug-remove
   "remove all smugmug nodes based on google-user-key"
@@ -105,55 +89,93 @@
     (str (count tokens) " tokens, " (count users) " users and " (count nodes) " nodes found")))
 
 
-
-(defn smugmug-callback
- "user has authenticated with smugmug so save the oauth-token with their guk as the owner"
- [req]
- (let [params (:params (ring.middleware.params/params-request req))
-       session (get-session req)
-       session-misc (:misc session)
-       googleuser-key (:googleuser-key session)
-       oauth_token (:smugmug_req_token session-misc)
-       oauth_verifier (get params "oauth_verifier")
-       access-token-response (oauth/access-token consumer
-                                                 oauth_token
-                                                 oauth_verifier)
-       oauth {:owner googleuser-key
-              :access_token (:oauth_token access-token-response)
-              :source "smugmug"
-              :refresh_token (:oauth_token_secret access-token-response)
-              :expires nil}]
-      (models/save-or-update :oauth-token [[:= :owner googleuser-key] [:= :source "smugmug"]] oauth)
-      (save-session-misc req (dissoc session-misc :smugmug_req_token))
-      (update-smuguser oauth)
-      (redirect "/#services" :temporary-redirect)))
-
-
-(defn smugmug-user
- [req]
- (let [session (get-session req)
-       guk (:googleuser-key session)]
-   (do
-    ;(let [oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))]
-    ;  (update-smuguser oauth)
-    ;(if-let [smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))])
-    (if-let [smug (smugmug-remove guk)]
-     (response (with-out-str (pp/pprint smug)))
-     (response "not-found")))))
-
-(defn get-root-node
+(defn test-remove-smugmug-data
   [req]
   (let [session (get-session req)
         guk (:googleuser-key session)
         oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
-        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-        root-node (select-keys (:Node (smug-request oauth (walk/NODE_URI (:node smug)) :GET walk/ROOT_NODE_PARAMS)) walk/NODE_KEYS)]
-    (let
-        [saved (models/save-or-update :smug-node [:= :smugmug (:key smug)]
-                                      {
-                                       :owner (:key smug)
-                                       :data (nippy/freeze root-node)})]
-      (response (with-out-str (pp/pprint root-node))))))
+        smug (first (ds/find-by-kind :smug-user :filters [:= :owner (:key oauth)]))
+        node (first (ds/find-by-kind :smug-node :filters [:= :owner (:key smug)]))]
+
+    (if (nil? oauth)
+      (response "nothing to delete")
+      (do
+        (ds/delete-by-key (:key oauth))
+        (ds/delete-by-key (:key smug))
+        (ds/delete-by-key (:key node))
+        (response "done")))))
+
+(defn test-display-smugmug-user
+  [req]
+  (let [session (get-session req)
+        guk (:googleuser-key session)
+        oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
+        smug (first (ds/find-by-kind :smug-user :filters [:= :owner (:key oauth)]))]
+     (if smug
+      (response (with-out-str (pp/pprint smug)))
+      (response "not-found"))))
+
+
+
+(defn oauth-smugmug-callback
+  "user has authenticated with smugmug so save the oauth-token with their guk as the owner"
+  [req]
+  (let [params (:params (ring.middleware.params/params-request req))
+        session (get-session req)
+        session-misc (:misc session)
+        googleuser-key (:googleuser-key session)
+        oauth_token (:smugmug_req_token session-misc)
+        oauth_verifier (get params "oauth_verifier")
+        access-token-response (oauth/access-token consumer
+                                                  oauth_token
+                                                  oauth_verifier)
+        oauth {:owner         googleuser-key
+               :access_token  (:oauth_token access-token-response)
+               :source        "smugmug"
+               :refresh_token (:oauth_token_secret access-token-response)
+               :expires       nil}
+        oauth-key (models/save-or-update :oauth-token [[:= :owner googleuser-key] [:= :source "smugmug"]] oauth)]
+    (save-session-misc req (dissoc session-misc :smugmug_req_token))
+    (deferred/add! :url "/tasks/get-smugmug-user" :params {:oauth-key oauth-key})
+    (redirect "/#services" :temporary-redirect)))
+
+(defn task-get-smugmug-user
+  "Called through TaskQueue API once the user has completed the SmugMug OAUTH Flow (by smugmug-callback)
+   Creates a :smug-user object which has the SmugMug user details linked to the :oauth-token object
+    Requires param oauth-key which is the oauth object"
+  [req]
+  (log/info (str "task-get-smugmug-user called with oauth-key " (get-in req [:params "oauth-key"])))
+  (if-let [oauth (ds/find-by-key (get-in req [:params "oauth-key"]))]
+    (let [user-details (smug-request oauth SMUGMUG_USER :GET)
+          username (get-in user-details [:User :Name])
+          bio-img (smug-request oauth (USER_EP username "bioimage") :GET)
+          smug-user-key (models/save-or-update
+                          :smug-user
+                          [:= :owner (:key oauth)]
+                          (merge
+                            {:owner (:key oauth)}
+                            {:bio-thumb (clojure.string/replace (get-in bio-img [:BioImage :ThumbnailUrl]) "/Th/" "/L/")}
+                            {:node (get-in user-details [:User :Uris :Node :Uri])}
+                            (:User user-details)))]
+      (log/info (str "saved smug-user for " username))
+      (deferred/add! :url "/tasks/get-smugmug-root-node" :params {:smug-user-key smug-user-key})
+      (response "OK"))))
+
+(defn task-get-smugmug-root-node
+  "Get root node from smugmug"
+  [req]
+  (log/info (str "task-get-smugmug-root-node called with smug-user-key " (get-in req [:params "smug-user-key"])))
+  (if-let [smug (ds/find-by-key (get-in req [:params "smug-user-key"]))]
+    (let [oauth (ds/find-by-key (:owner smug))
+          root-node (select-keys (:Node (smug-request oauth (walk/NODE_URI (:node smug)) :GET walk/ROOT_NODE_PARAMS)) walk/NODE_KEYS)
+          smug-node-key (models/save-or-update
+                          :smug-node [:= :smugmug (:key smug)]
+                          {
+                           :owner (:key smug)
+                           :data  (nippy/freeze root-node)})]
+      (deferred/add! :url "/tasks/update-smugmug-nodes" :params {:smug-node-key smug-node-key})
+      (log/info (str "saved smug-node"))
+      (response "OK"))))
 
 (defn needs-fetching
  [node]
@@ -196,89 +218,73 @@
    (:Type node) nil
    :else node))
 
-(defn update-smugmug-nodes
+(defn smugmug-root-node-summmary
+  [root]
+  (let [albums (albums-from-node root)]
+    {
+     :album-count  (count albums)
+     :image-count  (apply + (map :ImageCount albums))
+     :storage-used (human/filesize (apply + (map :OriginalSizes albums)))}))
+
+
+
+
+(defn task-update-smugmug-nodes
   [req]
-  (let [session (get-session req)
-        guk (:googleuser-key session)
-        oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
-        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-        smug-images (:ImageCount smug)
-        smug-key (:key smug)
-        req-count (atom 0)
-        node (first (ds/find-by-kind :smug-node :filters [:= :owner smug-key]))]
-    (if-let [data (:data node)]
-      (let [start-root (nippy/thaw data)
-            updated-root (cw/postwalk (partial update-if-req req-count oauth) start-root)
-            albums (albums-from-node updated-root)
-            na (count albums)
-            sum (human/filesize (apply + (map :OriginalSizes albums)))
-            photo-count (apply + (map :ImageCount albums))
-            proportion (format "%3f" (float (/ photo-count smug-images)))]
-        (do
-          (models/save-or-update :smug-node [:= :owner smug-key]
-                                  {}
-                                   :data (nippy/freeze updated-root)
-                                   :remaining-nodes @req-count
-                                   :owner smug-key)
-          (response (str "OK " proportion " - " @req-count
-                         " nodes have children to fetch. Info for "
-                         na " albums fetched (with a total storage usage of "
-                         sum ") and " photo-count " photos."))))
-      (response (with-out-str (pp/pprint node))))))
+  (log/info (str "task-update-smugmug-nodes called with smug-node-key " (get-in req [:params "smug-node-key"])))
+  (if-let [node (ds/find-by-key (get-in req [:params "smug-node-key"]))]
+    (let [
+          smug (ds/find-by-key (:owner node))
+          oauth (ds/find-by-key (:owner smug))
+          smug-images (:ImageCount smug)
+          smug-key (:key smug)
+          req-count (atom 0)]
+      (if-let [data (:data node)]
+        (let [start-root (nippy/thaw data)
+              updated-root (cw/postwalk (partial update-if-req req-count oauth) start-root)
+              node-summary (smugmug-root-node-summmary updated-root)
+              proportion (format "%3f" (float (/ (:image-count node-summary) smug-images)))]
+          (do
+            (models/save-or-update :smug-node [:= :owner smug-key]
+                                    {
+                                     :data (nippy/freeze updated-root)
+                                     :remaining-nodes @req-count
+                                     :owner smug-key})
+            (log/info (str "update-smugmug-nodes OK " proportion " - " @req-count " nodes have children to fetch." node-summary))
+            (if (< 0 @req-count)
+              (deferred/add! :url "/tasks/update-smugmug-nodes" :params {:smug-node-key (:key node)}))
+            (response "OK")))))))
 
-(defn update-smugmug-nodes
+
+
+(defn test-view-smugmug-nodes
  [req]
  (let [session (get-session req)
        guk (:googleuser-key session)
-       oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
-       smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-       smug-images (:ImageCount smug)
-       smug-key (:key smug)
-       req-count (atom 0)
-       node (first (ds/find-by-kind :smug-node :filters [:= :owner smug-key]))]
-   (if-let [data (:data node)]
-     (let [start-root (nippy/thaw data)
-           updated-root (cw/postwalk (partial update-if-req req-count oauth) start-root)
-           albums (albums-from-node updated-root)
-           na (count albums)
-           sum (human/filesize (apply + (map :OriginalSizes albums)))
-           photo-count (apply + (map :ImageCount albums))
-           proportion (format "%3f" (float (/ photo-count smug-images)))]
-       (do
-         (models/save-or-update :smug-node [:= :owner smug-key]
-                                   {
-                                    :data (nippy/freeze updated-root)
-                                    :remaining-nodes @req-count
-                                    :owner smug-key})
-         (response (str "OK " proportion " - " @req-count
-                        " nodes have children to fetch. Info for "
-                        na " albums fetched (with a total storage usage of "
-                        sum ") and " photo-count " photos."))))
-     (response (with-out-str (pp/pprint node))))))
-
-
-(defn view-smugmug-nodes
- [req]
- (let [session (get-session req)
-       guk (:googleuser-key session)
+       ; (:owner :smug-user) is the oauth key
        smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
        root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [:= :owner (:key smug)]))))]
      (log/debug guk)
      (log/debug smug)
      ;(response (pr-str (cw/prewalk filter-nodes root-node)))))
-     ;(response (with-out-str (pp/pprint root-node)))))
-     (response (with-out-str (pp/pprint smug)))))
+     (response (with-out-str (pp/pprint root-node)))))
+     ;(response (with-out-str (pp/pprint smug)))))
      ;(response (with-out-str (pp/pprint smug)))))
      ;(response (str na " albums, total: " (human/filesize sum)))))
 
 
 
-(defroutes smug-routes
- (GET "/getsmug" [] smugmug-redirect)
- (GET "/smugmug_test" [] smugmug-user)
- (GET "/get_root_node" [] get-root-node)
- (GET "/update_smug_nodes" [] update-smugmug-nodes)
- (GET "/view_smug_nodes" [] view-smugmug-nodes)
- (GET "/smugmug_callback" [] smugmug-callback))
+(defroutes
+  smug-routes
+  (GET "/getsmug" [] smugmug-redirect)
+  (GET "/smugmug_callback" [] oauth-smugmug-callback)
+
+  (GET "/test/show-smugmug-user" [] test-display-smugmug-user)
+  (GET "/test/show-smugmug-nodes" [] test-view-smugmug-nodes)
+  (GET "/test/remove-smugmug-data" [] test-remove-smugmug-data)
+
+  (POST "/tasks/get-smugmug-user" [] task-get-smugmug-user)
+  (POST "/tasks/get-smugmug-root-node" [] task-get-smugmug-root-node)
+  (POST "/tasks/update-smugmug-nodes" [] task-update-smugmug-nodes))
 
 

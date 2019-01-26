@@ -1,4 +1,6 @@
 (ns photosync.deferred
+  (:require
+    [liberator.core :refer [defresource]])
  (:import java.util.Date
            [com.google.appengine.api.taskqueue Queue QueueFactory
                                                TaskOptions$Builder TaskOptions$Method]))
@@ -105,4 +107,8 @@
 (defn delete! [task & {:keys [queue]}]
   (let [queue-obj (get-task-queue :queue queue)]
     (.deleteTask queue-obj task)))
+
+
+
+
 

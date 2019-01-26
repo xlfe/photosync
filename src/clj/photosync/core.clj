@@ -6,6 +6,7 @@
     [clojure.walk :as walk]
     [ring.middleware.reload :refer [wrap-reload]]
     [ring.util.response :refer [redirect resource-response]]
+    [ring.util.request :refer [content-type]]
     [clojure.tools.logging :as log]
     [photosync.util :as util]
     [liberator.core :refer [resource defresource]]
@@ -37,12 +38,18 @@
     (java.io.PushbackReader.
       (java.io.InputStreamReader. input "UTF-8"))))
 
+(defn application-edn?
+  "True if a request content type is application-edn"
+  [request]
+  (if-let [^String type (content-type request)]
+    (.startsWith type "application/edn")))
+
 (defn parse-edn-body [handler]
   (fn [request]
-    (handler (if-let [body (:body request)]
-               (assoc request
-                 :edn-body (read-inputstream-edn body))
-               request))))
+    (handler
+      (if-let [body (and (application-edn? request) (:body request))]
+          (assoc request :edn-body (read-inputstream-edn body))
+          request))))
 
 (defn api [req]
   (let [user (get-in req [:request :user-details])
@@ -76,6 +83,7 @@
 (def core-handler
   (-> (routes
         auth/auth-routes
+        smugmug/smug-routes
         (-> user-routes
             (wrap-routes auth/auth-user))
         error-routes)
@@ -91,7 +99,6 @@
 (def dev-handler
   (-> (routes
         cron/cron-routes
-        smugmug/smug-routes
         core-handler)
       wrap-reload))
 
