@@ -30,14 +30,34 @@
                                    "https://api.smugmug.com/services/oauth/1.0a/authorize"
                                    :hmac-sha1))
 
-
+(def SMUG_HEADERS {"User-Agent" "PhotoSync.Net-Server"})
+(def SMUGMUG_USER "https://api.smugmug.com/api/v2!authuser")
+(defn USER_EP [user endpoint] (str "https://api.smugmug.com/api/v2/user/" user "!" endpoint))
 
 (def REDIRECT_URI
-  (let [env (.value SystemProperty/environment)
-        uri (if (= env (SystemProperty$Environment$Value/Production))
-             "https://photosync.net/smugmug_callback"
-             "http://localhost:8080/smugmug_callback")]
-    uri))
+  (if
+    (=
+      (.value SystemProperty/environment)
+      (SystemProperty$Environment$Value/Production))
+    "https://photosync.net/smugmug_callback"
+    "http://localhost:8080/smugmug_callback"))
+
+
+(defn smug-request
+  "make a request to the SmugMug api with a user's oauth credentials"
+  ([oauth uri method]
+   (smug-request oauth uri method nil))
+  ([oauth uri method request-params]
+   (do
+     (log/info (str "smug-request called for url " uri " with request params: " request-params " and oauth " (:key oauth)))
+     (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri request-params)
+           resp (http/request {:method (name method) :accept :json :headers SMUG_HEADERS :url uri :query-params (merge creds request-params)})
+           rl-remain (get-in resp [:headers :X-RateLimit-Remaining])]
+        (log/info (:status resp))
+        (log/info (get (:headers resp) "Content-Type"))
+        (do
+            (log/info (str "Calls remaining: " rl-remain))
+            (:Response (parse/parse-string (:body resp) true)))))))
 
 
 (defn save-session-misc
@@ -52,41 +72,31 @@
   (let [session-key (get-in req [:session :identity])]
     (ds/find-by-key session-key)))
 
-(defn smugmug-redirect
-  "start the oauth flow for smugmug. Check the user doesn't already have a smugmug token"
-  [req]
-  (let [request-token (oauth/request-token consumer REDIRECT_URI)
-        redirect_uri (oauth/user-approval-uri consumer (:oauth_token request-token) {:Access "Full" :Permissions "Read"})]
-    (save-session-misc req {:smugmug_req_token request-token})
-    (redirect redirect_uri :temporary-redirect)))
 
 
-(def SMUG_HEADERS {"User-Agent" "PhotoSync.Net-Server"})
-(def SMUGMUG_USER "https://api.smugmug.com/api/v2!authuser")
-(defn USER_EP [user endpoint] (str "https://api.smugmug.com/api/v2/user/" user "!" endpoint))
 
-(defn smug-request
-  ([oauth uri method]
-   (smug-request oauth uri method nil))
-  ([oauth uri method request-params]
-   (do
-    (log/info (str "smug-request called for url " uri " with request params: " request-params " and oauth " (:key oauth)))
-    (let [creds (oauth/credentials consumer (:access_token oauth) (:refresh_token oauth) method uri request-params)
-          resp (http/request {:method (name method) :accept :json :headers SMUG_HEADERS :url uri :query-params (merge creds request-params)})
-          rl-remain (get-in resp [:headers :X-RateLimit-Remaining])]
-     (log/info (:status resp))
-     (log/info (get (:headers resp) "Content-Type"))
-     (do
-       (log/info (str "Calls remaining: " rl-remain))
-       (:Response (parse/parse-string (:body resp) true)))))))
 
-(defn smugmug-remove
-  "remove all smugmug nodes based on google-user-key"
-  [guk]
-  (let [tokens (ds/find-by-kind :oauth-token :filters [[:= :owner guk] [:= :source "smugmug"]])
-        users (concat (map #(ds/find-by-kind :smug-user :filters [:= :owner (:key %)]) tokens))
-        nodes (concat (map #(ds/find-by-kind :smug-node :filters [:= :owner (:key %)]) tokens))]
-    (str (count tokens) " tokens, " (count users) " users and " (count nodes) " nodes found")))
+;;;
+;;; Testing routes
+;;;
+
+
+
+(defn test-view-smugmug-nodes
+ [req]
+ (let [session (get-session req)
+       guk (:googleuser-key session)
+       ; (:owner :smug-user) is the oauth key
+       smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
+       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [:= :owner (:key smug)]))))]
+     (log/debug guk)
+     (log/debug smug)
+     ;(response (pr-str (cw/prewalk filter-nodes root-node)))))
+     (response (with-out-str (pp/pprint root-node)))))
+     ;(response (with-out-str (pp/pprint smug)))))
+     ;(response (with-out-str (pp/pprint smug)))))
+     ;(response (str na " albums, total: " (human/filesize sum)))))
+
 
 
 (defn test-remove-smugmug-data
@@ -116,6 +126,18 @@
       (response "not-found"))))
 
 
+;;;
+;;; OAUTH Flow
+;;;
+
+(defn oauth-smugmug-redirect
+  "start the oauth flow for smugmug. Check the user doesn't already have a smugmug token"
+  [req]
+  (let [request-token (oauth/request-token consumer REDIRECT_URI)
+        redirect_uri (oauth/user-approval-uri consumer (:oauth_token request-token) {:Access "Full" :Permissions "Read"})]
+    (save-session-misc req {:smugmug_req_token request-token})
+    (redirect redirect_uri :temporary-redirect)))
+
 
 (defn oauth-smugmug-callback
   "user has authenticated with smugmug so save the oauth-token with their guk as the owner"
@@ -138,6 +160,13 @@
     (save-session-misc req (dissoc session-misc :smugmug_req_token))
     (deferred/add! :url "/tasks/get-smugmug-user" :params {:oauth-key oauth-key})
     (redirect "/#services" :temporary-redirect)))
+
+
+
+;;;
+;;; Background tasks
+;;;
+
 
 (defn task-get-smugmug-user
   "Called through TaskQueue API once the user has completed the SmugMug OAUTH Flow (by smugmug-callback)
@@ -177,6 +206,9 @@
       (log/info (str "saved smug-node"))
       (response "OK"))))
 
+
+
+
 (defn needs-fetching
  [node]
  (and
@@ -209,7 +241,6 @@
   [node]
   (filter (complement nil?) (map #(get-in % [:Uris :Album :Album]) (tree-seq :HasChildren :children node))))
 
-
 (defn filter-nodes
  [node]
  (cond
@@ -225,8 +256,6 @@
      :album-count  (count albums)
      :image-count  (apply + (map :ImageCount albums))
      :storage-used (human/filesize (apply + (map :OriginalSizes albums)))}))
-
-
 
 
 (defn task-update-smugmug-nodes
@@ -257,26 +286,12 @@
 
 
 
-(defn test-view-smugmug-nodes
- [req]
- (let [session (get-session req)
-       guk (:googleuser-key session)
-       ; (:owner :smug-user) is the oauth key
-       smug (first (ds/find-by-kind :smug-user :filters [:= :owner guk]))
-       root-node (nippy/thaw (:data (first (ds/find-by-kind :smug-node :filters [:= :owner (:key smug)]))))]
-     (log/debug guk)
-     (log/debug smug)
-     ;(response (pr-str (cw/prewalk filter-nodes root-node)))))
-     (response (with-out-str (pp/pprint root-node)))))
-     ;(response (with-out-str (pp/pprint smug)))))
-     ;(response (with-out-str (pp/pprint smug)))))
-     ;(response (str na " albums, total: " (human/filesize sum)))))
 
 
 
 (defroutes
   smug-routes
-  (GET "/getsmug" [] smugmug-redirect)
+  (GET "/getsmug" [] oauth-smugmug-redirect)
   (GET "/smugmug_callback" [] oauth-smugmug-callback)
 
   (GET "/test/show-smugmug-user" [] test-display-smugmug-user)
