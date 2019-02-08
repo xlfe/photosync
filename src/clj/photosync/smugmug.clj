@@ -121,10 +121,6 @@
         guk (:googleuser-key session)
         oauth (first (ds/find-by-kind :oauth-token :filters [[:= :source "smugmug"] [:= :owner guk]]))
         smug (first (ds/find-by-kind :smug-user :filters [:= :owner (:key oauth)]))]
-    (log/info "logging #1 from test-display-smugmug-user" {:test 1 :user "testing-user"})
-    (log/info {:this-map "is at the start"} "logging #2 from test-display-smugmug-user")
-    (log/info {:this-map "has no string "} {:but-has "two maps!"})
-    (log/info "this is only string")
     (if smug
       (response (with-out-str (pp/pprint smug)))
       (response "not-found"))))

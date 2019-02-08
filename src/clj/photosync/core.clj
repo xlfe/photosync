@@ -7,7 +7,8 @@
     [ring.middleware.reload :refer [wrap-reload]]
     [ring.util.response :refer [redirect resource-response]]
     [ring.util.request :refer [content-type]]
-    [clojure.tools.logging :as log]
+    ;[clojure.tools.logging :as log]
+    [photosync.logging :as log]
     [photosync.util :as util]
     [liberator.core :refer [resource defresource]]
     [clojure.edn :as edn]
@@ -68,6 +69,7 @@
   :new? false
   :respond-with-entity? true
   :handle-ok (fn [ctx]
+                 (log/info (get-in ctx [:request :user-details]))
                  (prn-str (::data ctx))))
 
 (def resource-root {:root "public"})
