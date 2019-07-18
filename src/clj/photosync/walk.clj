@@ -58,7 +58,7 @@
   :HideOwner  ; false
   :Keywords ;
   :Name  ; Card
-  :NodeID  ; ***REMOVED***
+  :NodeID  ; Jm9VGh
   :Privacy  ;Unlisted
   :SecurityType  ;None
   :Type  ; Album
@@ -66,7 +66,7 @@
   :Uri ; uri
   :Uris
   :UrlPath ; /Card
-  :WebUri])  ;https://***REMOVED***/Card/n-***REMOVED***
+  :WebUri])  ;https://url
 
 (def MIN_KEYS
   [
@@ -84,11 +84,11 @@
 
 ; Will need to reference against :-
 ;UserDeletedAlbums
-;/api/v2/user/half-tone-im!deletedalbums
+;/api/v2/user/uname!deletedalbums
 ;UserDeletedFolders
-;/api/v2/user/half-tone-im!deletedfolders
+;/api/v2/user/uname!deletedfolders
 ;UserDeletedPages
-;/api/v2/user/half-tone-im!deletedpages
+;/api/v2/user/uname!deletedpages
 
 (defn get-zipper-from-data
  [data]
