@@ -3,6 +3,7 @@ target/
 *.iml
 bin/
 .idea/
+src/clj/photosync/secrets.clj
 .lein-repl-history
 .nrepl-port
 resources/public/js
