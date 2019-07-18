@@ -181,7 +181,7 @@
 
 (defn cookie-wrap [handler]
   (wrap-session handler {
-                         :store (cookie-store {:key "***REMOVED*** "})
+                         :store (cookie-store {:key secrets/cookie-store-key})
                          :cookie-name "S"
                          :cookie-attrs (merge {:max-age (* 3600 24 2) :http-only true})}))
 
