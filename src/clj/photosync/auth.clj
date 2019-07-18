@@ -20,12 +20,11 @@
             [java-time.amount :refer [seconds]]
             [photosync.model :as models]
             [photosync.util :as util])
+            [photosync.secrets :as secrets])
   (:import (com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value)))
 
 
 (def login-uri "https://accounts.google.com")
-(def CLIENT_ID "***REMOVED***.apps.googleusercontent.com")
-(def CLIENT_SECRET "***REMOVED***")
 
 (def REDIRECT_URI
   (let [env (.value SystemProperty/environment)
@@ -54,7 +53,7 @@
     "scope=" (ring.util.codec/url-encode SCOPES) "&"
     "redirect_uri=" (ring.util.codec/url-encode REDIRECT_URI) "&"
     "response_type=code&"
-    "client_id=" (ring.util.codec/url-encode CLIENT_ID) "&"
+    "client_id=" (ring.util.codec/url-encode secrets/CLIENT_ID) "&"
     (if need-refresh
       "prompt=consent"
       "prompt=none")
@@ -69,7 +68,7 @@
   [params]
   (let [form-params (assoc
                       params
-                      :client_id CLIENT_ID :client_secret CLIENT_SECRET :redirect_uri REDIRECT_URI)]
+                      :client_id secrets/CLIENT_ID :client_secret secrets/CLIENT_SECRET :redirect_uri REDIRECT_URI)]
     (parse/parse-string (:body
                           (client/post google-token-endpoint {:form-params form-params})))))
 

@@ -17,14 +17,15 @@
             [photosync.util :as util]
             [photosync.logging :as log]
             [photosync.deferred :as deferred]
+            [photosync.secrets :as secrets]
             [photosync.walk :as walk]
             [oauth.client :as oauth])
   (:import (com.google.appengine.api.utils SystemProperty SystemProperty$Environment$Value)))
 
 
 
-(def consumer (oauth/make-consumer "***REMOVED***"
-                                   "***REMOVED***"
+(def consumer (oauth/make-consumer secrets/smugmug-apikey
+                                   secrets/smugmug-apisecrett
                                    "https://api.smugmug.com/services/oauth/1.0a/getRequestToken"
                                    "https://api.smugmug.com/services/oauth/1.0a/getAccessToken"
                                    "https://api.smugmug.com/services/oauth/1.0a/authorize"
